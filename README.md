@@ -1,2 +1,2 @@
 # physik
-Physics Simulations and other Repo
+Physics Simulations and Machine Learning Repo
