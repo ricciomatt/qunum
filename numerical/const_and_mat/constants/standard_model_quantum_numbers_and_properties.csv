@@ -1,0 +1,19 @@
+Particle,Masses,Spin,Type,Lepton Number,Charge,Color,ISO-SPIN
+e,510998.95,0.5,Fermion,1,-1.0,False,-0.5
+mu,105700000.0,0.5,Fermion,1,-1.0,False,-0.5
+tau,178001000.0,0.5,Fermion,1,-1.0,False,-0.5
+ve,2.0,0.5,Fermion,1,0.0,False,0.5
+vmu,2.0,0.5,Fermion,1,0.0,False,0.5
+vtau,2.0,0.5,Fermion,1,0.0,False,0.5
+u,1900000.0,0.5,Quark,0,0.6666666666666666,True,0.5
+d,4400000.0,0.5,Quark,0,-0.5,True,-0.5
+s,87000000.0,0.5,Quark,0,-0.3333333333333333,True,-0.5
+c,1320000000.0,0.5,Quark,0,0.6666666666666666,True,0.5
+b,4240000000.0,0.5,Quark,0,-0.3333333333333333,True,-0.5
+t,172700000000.0,0.5,Quark,0,0.6666666666666666,True,0.5
+g,0.0,1.0,Gauge(Vector) Boson,0,0.0,True,0.0
+y,0.0,1.0,Gauge(Vector) Boson,0,0.0,False,0.0
+W^+,91190000000.0,1.0,Gauge(Vector) Boson,0,0.0,False,0.0
+W^-,80360000000.0,1.0,Gauge(Vector) Boson,0,1.0,False,1.0
+Z,80360000000.0,1.0,Gauge(Vector) Boson,0,-1.0,False,-1.0
+H,124970000000.0,0.0,Scalar Boson,0,0.0,False,0.0
