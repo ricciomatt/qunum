@@ -17,10 +17,10 @@ class ModelTracker:
         return
     
     def __call__(self,y:torch.Tensor, yh:torch.Tensor, L:torch.Tensor):
-        self.metrics['loss'].append(L.detach().numpy())
+        self.metrics['loss'].append(L.cpu().detach().numpy())
         for f in self.functions:
             if(f != 'loss'):
-                self.metrics[f].append(self.functions[f](yh,y))
+                self.metrics[f].append(self.functions[f](yh.cpu(),y.cpu()))
         
         self.ix+=1
         return

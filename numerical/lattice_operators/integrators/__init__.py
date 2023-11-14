@@ -29,3 +29,5 @@ def integrate_newton_coates_do(f:torch.Tensor, L:torch.Tensor)->torch.Tensor:
     return M
 
 
+
+

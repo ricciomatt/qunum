@@ -21,7 +21,7 @@ def grad_descent(Model:torch.nn.Module,
             y = y.to(device)
             for i in range(batch_steps):
                 yh = Model.forward(x)
-                L = Model.loss_funct(yh, y, x)
+                L = Model.loss(yh, y, x)
                 if(prnt_):
                     print(f"{epoch}/{epochs}: Loss={L} {step}/{len(dataLoader)}")
                 L.backward()
