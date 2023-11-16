@@ -105,6 +105,7 @@ class Magnus:
         Omega[0] = self.Int.cumeval(H, dx)
         Omega[1] = (1/2)*self.Int.cumeval(comm(H, Omega[0]), dx)
         Omega[2] = (1/6)*(self.Int.cumeval(comm(H, Omega[1]),dx) + self.Int.cumeval(torch.einsum('Aij, Ajk, Akm-> Aim', Omega[0], H, H), dx)) 
+        
         Omega[3] = (1/12)*()
         return Omega
     
@@ -117,8 +118,6 @@ def tpcomm(A:torch.Tensor,B:torch.Tensor):
     return torch.einsum('Aij, Bjk-> ABik', A, B) - torch.einsum('Aij, Bjk-> ABik', B, A)
 
     
-
-# have to fix this function. think this works have to try on nuetrino hamiltonian
 @torch.jit.script
 def expansion(H:torch.Tensor, 
               Bk:torch.Tensor, 
@@ -126,10 +125,12 @@ def expansion(H:torch.Tensor,
               dx:float,
               L:torch.Tensor)->torch.Tensor:
     H *= -1j
+    
     Omega = torch.zeros((order, H.shape[0], H.shape[1], H.shape[1]), dtype = torch.complex64)
     Omega[0] = newton(H.clone(), L).cumsum(dim=0)*dx
     Omega[0] = H.clone().cumsum(dim=0)*dx
     S = torch.zeros((order, order, H.shape[0], H.shape[1], H.shape[1]), dtype = torch.complex64)
+    
     if(order >= 2):
         for k in range(2, order+1):
             n = k-1
