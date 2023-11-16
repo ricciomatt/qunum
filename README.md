@@ -7,3 +7,4 @@ Physics Simulations and Machine Learning
 - Hamiltonian Loss functions
 - Commutator and SU(2) and SU(3) Generators and algebra
 - Gaussian Kernels Work
+- Add Physics Modules
