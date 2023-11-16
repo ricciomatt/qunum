@@ -1,13 +1,8 @@
 import torch
 from torch import einsum
 import numba as nb
-from plotly import express as px, graph_objects as go, subplots as plt_sub
-from plotly.offline import iplot, init_notebook_mode
 from qutip import tensor, basis, Qobj
 import numpy as np
-init_notebook_mode(True)
-import sys,os
-sys.path.append(f'/home/{os.getlogin()}')
 from ....const_and_mat.constants import c as c
 from ....seml.fitting_algos import Magnus
 from ....algebra.representations.su import get_pauli
@@ -64,10 +59,11 @@ def nuetrino_hamiltonian(t:torch.Tensor,
                          Rv:float,
                          r_0:float, 
                          mu0:float,
-                         hbar:float = 1, )->torch.Tensor:
+                         hbar:float = 1, 
+                         device:int = 0)->torch.Tensor:
     u = mu(t*c, mu0, Rv, r_0)
     a = torch.ones(u.shape[0], dtype = torch.complex64)
-    return (einsum('n, ij->nij', a, H_0.clone()) + einsum('n,ij->nij',u/m, H_1.clone()))
+    return (einsum('n, ij->nij', a.to(device), H_0.clone()) + einsum('n,ij->nij',(u/m).to(device), H_1.clone()))
 
 
 def set_up_ham(omega0:float= 1.0, 
@@ -78,7 +74,8 @@ def set_up_ham(omega0:float= 1.0,
               mu0_mult:None|float=10., 
               num_particles:int = 3,
              order:int = 4, 
-             dt:float = 1e-3,)->torch.Tensor:
+             dt:float = 1e-3,
+             device:int|str = 0)->torch.Tensor:
     if(omega_mult is None):
         omega_mult = torch.tensor(torch.arange(1,num_particles+1).numpy(), dtype = torch.complex64)
     omega = omega_mult*omega0
@@ -91,7 +88,7 @@ def set_up_ham(omega0:float= 1.0,
     J = get_J(num_particles, sigma)
     H_0 = H0(omega, J)
     H_1 = H1(J)
-    h = lambda t: nuetrino_hamiltonian(t, H_0, H_1, v, num_particles, Rv, r_0, mu0)
+    h = lambda t: nuetrino_hamiltonian(t, H_0.to(device), H_1.to(device), v, num_particles, Rv, r_0, mu0, device=device)
     
     H = LazyTimeHamiltonian(h)
     M = Magnus(H, order=order, dt = dt)

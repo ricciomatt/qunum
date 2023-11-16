@@ -35,7 +35,7 @@ class HamiltonianLossFunction:
         return 
     def __call__(self, yh:torch.Tensor, y:torch.Tensor, Inpt:torch.Tensor)->torch.Tensor:
         l = einsum('Aij, Aj -> Ai',
-                   -1j*self.H(Inpt[:, -1].cpu()).to(Inpt.device), 
+                   -1j*self.H(Inpt[:, -1]).to(Inpt.device), 
                    yh) - dt(
                        yh, 
                        Inpt
