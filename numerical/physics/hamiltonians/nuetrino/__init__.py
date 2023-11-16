@@ -1,1 +1,1 @@
-from . import mean_fieldW
+from . import mean_field
