@@ -1,4 +1,8 @@
-import camb
+import warnings
+try:    
+    import camb
+except:
+    warnings.warn('Camb Not Installed')
 import numpy as np
 from torch.distributions import Normal
 from numpy import typing as npt
