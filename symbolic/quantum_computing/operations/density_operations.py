@@ -24,3 +24,7 @@ def ventropy(p:Matrix)->Function:
             S-=lam*log(lam)
     return S
 
+@nb.jit(forceobj=True)
+def pid(p:Matrix)->Matrix:
+    return p 
+

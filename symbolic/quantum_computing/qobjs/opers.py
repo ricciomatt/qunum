@@ -40,6 +40,7 @@ class Operator(Matrix):
                 ).fetch().sort(a)['ix'].to_list()
             )[:,0]
         return Operator(ptrace_ix(ix_, np.array(self)), meta = self._metadata)
+    
     def pT(self, ix_T:tuple[int]|list[int])->object:
         a = vgc(ix_T)
         ix_ =  np.array(
@@ -52,6 +53,8 @@ class Operator(Matrix):
                 ).fetch().sort(a)['ix'].to_list()
             )[:,0]
         return
+    
     def entropy(self, ix:tuple[int]|list[int])->object:
-        return Operator(ventropy(Matrix(self)), self._metadata)
+        return (ventropy(Matrix(self)), self._metadata)
+    
     
