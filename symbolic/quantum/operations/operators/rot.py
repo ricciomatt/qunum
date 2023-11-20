@@ -16,12 +16,7 @@ def rn(theta:Symbol|Matrix, n_vec:Matrix, n_particles:int):
 
 def r_dir(theta:float|Symbol, dir = 'x'):
     sigma = [Operator(i) for i  in get_pauli(include_identity=True)]
-    if(dir == 'x'):
-        dir = 1
-    elif(dir == 'y'):
-        dir = 2
-    elif(dir == 'z'):
-        dir = 3
-    else:
+    ix = {'x':1, 'y':2, 'z':3}
+    if(dir not in ix):
         raise ValueError('must be x,y,or z')
-    return Operator(sigma[0] * cos(theta) -I*sigma[dir]*sin(theta), n_particles = 1, hilbert_space_dims = 2)
+    return Operator(sigma[0] * cos(theta) -I*sigma[ix[dir]]*sin(theta), n_particles = 1, hilbert_space_dims = 2)
