@@ -19,8 +19,8 @@ KJ = (2*qe)/h
 Solar_Mass = 2e30
 
 '''Mass Parameters Standard'''
-
-#standard_model = pd.read_csv(f'./constants/standard_model_quantum_numbers_and_properties.csv').set_index('Particle')
+def get_sm():
+    return pd.read_csv(f'./constants/standard_model_quantum_numbers_and_properties.csv').set_index('Particle')
 
 '''Mass Special Composite Paritcles'''
 me_ev = 0.510998950e6

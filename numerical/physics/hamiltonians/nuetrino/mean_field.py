@@ -3,7 +3,7 @@ from torch import einsum
 import numba as nb
 from qutip import tensor, basis, Qobj
 import numpy as np
-from ....const_and_mat.constants import c as c
+from ....constants import c as c
 from ....seml.fitting_algos import Magnus
 from ....algebra.representations.su import get_pauli
 from ....seml.data.data_loaders.physics.quantum import LazyTimeHamiltonian
