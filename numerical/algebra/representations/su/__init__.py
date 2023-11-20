@@ -2,6 +2,7 @@ import numpy as np
 from torch import tensor, complex64, ComplexType
 from torch.types import _TensorOrTensors
 from numpy.typing import NDArray
+
 def get_pauli(to_tensor:bool= False, include_identity:bool=True)->NDArray[np.complex64]|ComplexType:
     if(include_identity):
         sigma = np.zeros((4,2,2), dtype = np.complex64)
