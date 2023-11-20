@@ -1,1 +1,1 @@
-from .density_operations import ptrace_ix, vgc
+from .density_operations import ptrace_ix, vgc, ventropy

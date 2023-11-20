@@ -1,6 +1,6 @@
 import polars as pl
 import numpy as np
-from sympy import Matrix
+from sympy import Matrix, log, Function
 import numba as nb
 from numpy.typing import NDArray
 def get_cols(ix):
@@ -14,3 +14,13 @@ def ptrace_ix(ix:NDArray[np.int64], p:Matrix)->Matrix:
         for j in range(ix.shape[0]):
             pA[i,j] = p[ix[i], ix[j]].sum()
     return pA
+
+@nb.jit(forceobj=True)
+def ventropy(p:Matrix)->Function:
+    ev = p.eigenvals()
+    S = 0
+    for lam in ev:
+        for j in range(ev[lam]):
+            S-=lam*log(lam)
+    return S
+
