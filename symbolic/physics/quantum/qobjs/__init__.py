@@ -1,2 +1,2 @@
 from . opers import Operator
-from .sqobj import SQObj
+from .sqobj import SQobj

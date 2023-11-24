@@ -39,7 +39,7 @@ class OperMeta:
     
     
 
-class SQObjMeta:
+class SQobjMeta:
     def __init__(self, n_particles:int= None, hilbert_space_dims:int = 2, shp:tuple[int] = None, check_hermitian:bool = False)->None:
         if(len(shp) == 2):
             if(shp[0] == 1):

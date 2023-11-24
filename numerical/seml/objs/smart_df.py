@@ -9,8 +9,10 @@ class SmartDf(pl.DataFrame):
         else:
             self._metadata = SmartMeta()
         return 
+    
     def clean(self):
         pass
+    
     def _filter_(self):
         pass
     

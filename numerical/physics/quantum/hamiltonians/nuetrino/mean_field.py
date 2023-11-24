@@ -1,14 +1,60 @@
+from typing import Any
 import torch
 from torch import einsum
 import numba as nb
 from qutip import tensor, basis, Qobj
 import numpy as np
-from ....constants import c as c
-from ....seml.fitting_algos import Magnus
-from ....algebra.representations.su import get_pauli
-from ....seml.data.data_loaders.physics.quantum import LazyTimeHamiltonian
+from .....constants import c as c
+from .....seml.fitting_algos import Magnus
+from .....algebra.representations.su import get_pauli
+from .....seml.data.data_loaders.physics.quantum import LazyTimeHamiltonian
 
 
+class MeanField:
+    def __init__(self, 
+                n_particles:int=2,
+                flavors:int = 2,
+                omega:torch.Tensor|None = None,
+                omega_0:float|None = 1.,
+                mu0:float|torch.Tensor = 5.,
+                Rv:float|torch.Tensor = 50e6,
+                r_0:float = 50e6,
+                v:float = c,
+                device:int|str = '0',
+                ):
+        
+        J = get_J(n_particles, get_pauli(n_particles))
+        if(omega is None):
+            self.w = omega 
+            self.w0 = omega.min()
+        else:
+            self.w = torch.arange(1, n_particles+1)*omega_0
+            self.w0 = omega_0
+        
+        self.H0 = H0(self.w, J)
+        self.H1 = H1(J)
+        self.mu0 = torch.Tensor(mu0)
+        self.v = torch.Tensor(v)
+        self.r = torch.Tensor(r_0)
+        self.Rv = torch.Tensor(Rv)
+        self.N = n_particles
+        
+        try:
+            self.H0.to(device)
+            self.H1.to(device)
+            self.N.to(device)
+            self.v.to(device)
+            self.r.to(device)
+            self.Rv.to(device)
+        except:
+            pass
+        return
+    @torch.jit.script    
+    def __call__(self, t:torch.Tensor) -> torch.Tensor:
+        u = self.mu0/self.N*torch.pow(1-torch.sqrt(1-torch.pow(self.Rv/(self.r+self.v*t),2)),2)
+        a = torch.ones(u.shape[0], dtype = torch.complex64)
+        return (einsum('n, ij->nij', a.to(self.H0.device), self.H0.clone()) + einsum('n,ij->nij',(u), self.H1))
+ 
 @torch.jit.script
 def get_J(n:int, sigma:torch.Tensor)->torch.Tensor:
     J = torch.empty((n, 3, int(sigma.shape[1]**n), int(sigma.shape[1]**n)), dtype = torch.complex64)
@@ -79,17 +125,9 @@ def set_up_ham(omega0:float= 1.0,
     if(omega_mult is None):
         omega_mult = torch.tensor(torch.arange(1,num_particles+1).numpy(), dtype = torch.complex64)
     omega = omega_mult*omega0
-    sigma = get_pauli(to_tensor=True)
     mu0 = mu0_mult*omega0
-    
-    print('\\mu_{0}='+str(mu0)+',')
-    
     v = c
-    J = get_J(num_particles, sigma)
-    H_0 = H0(omega, J)
-    H_1 = H1(J)
-    h = lambda t: nuetrino_hamiltonian(t, H_0.to(device), H_1.to(device), v, num_particles, Rv, r_0, mu0, device=device)
-    
-    H = LazyTimeHamiltonian(h)
+    Mf = MeanField(num_particles, omega=omega, mu0=mu0, Rv=Rv, r_0=r_0, v=v, device=device)
+    H = LazyTimeHamiltonian(Mf, dt=dt)
     M = Magnus(H, order=order, dt = dt)
     return M, H

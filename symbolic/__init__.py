@@ -1,2 +1,2 @@
 from . import algebra
-from . import quantum as qpid
+from . import physics 
