@@ -8,14 +8,13 @@ from numpy.typing import NDArray
 from .meta import OperMeta
 from ..operations import ptrace_ix, vgc, ventropy
 
-
-class Operator(Matrix):
+class QCirc(Matrix):
     def __init__(self, *args,
                  meta:OperMeta|None = None, 
                  n_particles:int = 1, 
                  hilbert_space_dims:int =2,
                  **kwargs)->object:
-        super(Operator, self).__init__()
+        super(QCirc, self).__init__()
         if(meta is None):
             self._metadata = OperMeta(
                 n_particles=n_particles, 

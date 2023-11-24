@@ -13,3 +13,9 @@ def lin_reg_do(X:NDArray, Y:NDArray,
     XtXI = np.linalg.inv(X.T@ X)
     beta = XtXI @ (X.T @ inverse_function(Y))
     return beta
+
+class GLR:
+    def __init__(self):
+        return
+    def __str__(self):
+        return ''

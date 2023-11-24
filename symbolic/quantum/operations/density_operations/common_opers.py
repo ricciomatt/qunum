@@ -28,3 +28,5 @@ def ventropy(p:Matrix)->Function:
 def pid(p:Matrix)->Matrix:
     return p 
 
+
+

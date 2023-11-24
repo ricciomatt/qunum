@@ -1,23 +1,21 @@
-from sympy import Matrix, eye, sqrt, log,Function
+from sympy import Matrix
 import numpy as np
-import torch
-import numba as nb
-import warnings 
 import polars as pl
 from numpy.typing import NDArray
-from .meta import OperMeta
+from .meta import SQObjMeta
 from ..operations import ptrace_ix, vgc, ventropy
 
 
-class Operator(Matrix):
-    def __init__(self, *args,
-                 meta:OperMeta|None = None, 
+class SQObj(Matrix):
+    def __init__(self, 
+                 *args,
+                 meta:SQObjMeta|None = None, 
                  n_particles:int = 1, 
                  hilbert_space_dims:int =2,
                  **kwargs)->object:
-        super(Operator, self).__init__()
+        super(SQObj, self).__init__()
         if(meta is None):
-            self._metadata = OperMeta(
+            self._metadata = SQObjMeta(
                 n_particles=n_particles, 
                 hilbert_space_dims=hilbert_space_dims,
                 shp = self.shape
@@ -27,9 +25,11 @@ class Operator(Matrix):
         return
     
     def dag(self)->object:
-        return Operator(self.conjugate().T, self._metadata)
+        return SQObj(self.conjugate().T, self._metadata)
 
     def ptrace(self, keep_ix:tuple[int]|list[int])->object:
+        if(self._metadata.obj_tp != 'operator'):
+            raise TypeError('Must be an operator')
         a = vgc(keep_ix)
         ix_ =  np.array(
             self._metadata.ixs.groupby(
@@ -40,9 +40,11 @@ class Operator(Matrix):
                     pl.col('row_nr').implode().alias('ix')
                 ).fetch().sort(a)['ix'].to_list()
             )[:,0]
-        return Operator(ptrace_ix(ix_, np.array(self)), meta = self._metadata)
+        return SQObj(ptrace_ix(ix_, np.array(self)), meta = self._metadata)
     
     def pT(self, ix_T:tuple[int]|list[int])->object:
+        if(self._metadata.obj_tp != 'operator'):
+            raise TypeError('Must be an operator')
         a = vgc(ix_T)
         ix_ =  np.array(
             self._metadata.ixs.groupby(
@@ -56,6 +58,9 @@ class Operator(Matrix):
         return
     
     def entropy(self, ix:tuple[int]|list[int])->object:
+        if(self._metadata.obj_tp != 'operator'):
+            raise TypeError('Must be an operator')
         return (ventropy(Matrix(self)), self._metadata)
+    
     
     

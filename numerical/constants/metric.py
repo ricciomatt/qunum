@@ -2,6 +2,7 @@ import pandas as pd
 from numpy import pi
 from . import unit_conversion as uc
 
+ub = 9.2740100783e-24
 G = 6.67430e-11
 c = 299_792_458
 c_exact = 299_792_458
