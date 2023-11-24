@@ -1,8 +1,12 @@
 import warnings
 try:    
     import camb
+    from camb import CAMBparams
 except:
     warnings.warn('Camb Not Installed')
+    class CAMBparams:
+        def __init__():
+            pass
 import numpy as np
 from torch.distributions import Normal
 from numpy import typing as npt
