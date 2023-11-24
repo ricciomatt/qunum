@@ -21,7 +21,8 @@ def ventropy(p:Matrix)->Function:
     S = 0
     for lam in ev:
         for j in range(ev[lam]):
-            S-=lam*log(lam)
+            if(lam != 0):
+                S-=lam*log(lam)
     return S
 
 @nb.jit(forceobj=True)

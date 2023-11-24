@@ -5,10 +5,10 @@ from typing import Callable
 
 
 def commutator(op1:sp.Matrix, op2:sp.Matrix)->sp.Matrix:
-    return op1.adjoint() @ op2 - op2.adjoint() @ op1
+    return op1 @ op2 - op2 @ op1
 
 def anticommutator(op1:sp.Matrix, op2:sp.Matrix)->sp.Matrix:
-    return op1.adjoint() @ op2 + op2.adjoint() @ op1
+    return op1 @ op2 + op2 @ op1
 
 # need to reeval how to do this g_ij is not just a matrix its a tensor of matricies, g_[0,0] = delta[ij] I
 def full_apply(ops:sp.Matrix, funct:Callable)->sp.Matrix:
