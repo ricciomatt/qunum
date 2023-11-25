@@ -1,8 +1,10 @@
 import torch
 try:
     import cupy as cp
+    from cupy.typing import NDArray as CPArray
 except:
     import numpy as cp
+    from numpy.typing import NDArray as CPArray
 
 import numpy as np
 import pandas as pd
@@ -21,7 +23,7 @@ from ....lattice_operators import integrators_
 
 from typing import Callable
 from numpy.typing import NDArray
-from cupy.typing import NDArray as CPArray
+
 
 class Kernal:
     def __init__(self,
