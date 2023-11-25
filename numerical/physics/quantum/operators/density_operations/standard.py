@@ -42,8 +42,8 @@ def ventropy(p:torch.Tensor)->float:
     return S
 
 @torch.jit.script
-def pT_arr(p, ixs):
-    k = np.empty_like(p)
+def pT_arr(p:torch.Tensor, ixs:torch.Tensor):
+    k = torch.empty_like(p)
     for i in range(ixs.shape[0]):
         for j in range(ixs.shape[0]):
             t = [[t for m in range(ixs.shape[1])]
