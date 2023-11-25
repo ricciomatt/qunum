@@ -1,0 +1,11 @@
+pip install torch
+pip install torchviz
+pip install complexPyTorch
+pip install numpy
+pip install polars 
+pip install plotly
+pip install sympy
+pip install pandas
+pip install cupy
+pip install camb
+pip install qutip

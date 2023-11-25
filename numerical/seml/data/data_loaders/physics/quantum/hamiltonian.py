@@ -8,6 +8,7 @@ class LazyHamiltonian:
                  x_generator:list[torch.distributions.Uniform]):
         
         pass
+
 class LazyTimeHamiltonian:
     def __init__(self, 
                  hamiltonain:Callable = None,
@@ -67,5 +68,11 @@ class LazyTimeHamiltonian:
             return self.H(ix*self.dt)
         else:
             return self.H(torch.tensor([ix])*self.dt)
+    def to(self,device:str|int)->None:
+        try:
+            self.H.to(device)
+        except:
+            pass 
+        return
         
     

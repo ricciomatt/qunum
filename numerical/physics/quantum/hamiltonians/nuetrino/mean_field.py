@@ -42,6 +42,7 @@ class MeanField:
         self.Rv = float(Rv)
         self.N = float(n_particles)
         self.flavors = flavors
+        self.device = device
         
         try:
             self.H0.to(device)
@@ -56,6 +57,14 @@ class MeanField:
     
     def __call__(self, t:torch.Tensor) -> torch.Tensor:
         return hamiltonian_operator(self.H0, self.H1, t, self.r, self.Rv, self.N, self.mu0)
+    
+    def to(self, device:str|int):
+        self.device = device
+        self.w.to(device)
+        self.H0.to(device)
+        self.H1.to(device)
+        return 
+        
     
     def __repr__(self):
         disp(md(f'''$$\\omega_i = {latex(Matrix(self.w.detach().real.numpy()).T)}\\\\v={str(self.v)}, R_\\nu={str('{:.2e}'.format(self.Rv))}, r_0 = {str('{:.2e}'.format(self.Rv))}, \\mu_0 = {str(self.mu0)}$$'''))

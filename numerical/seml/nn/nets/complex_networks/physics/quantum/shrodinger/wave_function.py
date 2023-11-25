@@ -1,6 +1,10 @@
 from torch.nn import Module, Sequential, MSELoss
 from torch import exp, Tensor
-from complexPyTorch.complexLayers import ComplexReLU, ComplexLinear
+import warnings 
+try:
+    from complexPyTorch.complexLayers import ComplexReLU, ComplexLinear
+except:
+    warnings.warn('Complex PyTorch not installed, Limited Access to Complex Nueral Networks')
 class PsiNetwork(Module):
     def __init__(self, loss_function=MSELoss()):
         super(PsiNetwork, self).__init__()
