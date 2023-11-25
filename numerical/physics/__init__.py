@@ -1,3 +1,3 @@
 from . import cosmology as cosmo
-from . import hamiltonians
+from .quantum import hamiltonians
 from . import quantum
