@@ -1,7 +1,7 @@
 from typing import Any
 import torch
 from sympy import Matrix, latex, I
-from torch import einsum
+from torch import einsum, Tensor
 import numba as nb
 from qutip import tensor, basis, Qobj
 import numpy as np
@@ -10,7 +10,7 @@ from .....seml.fitting_algos import Magnus
 from .....algebra.representations.su import get_pauli
 from .....seml.data.data_loaders.physics.quantum import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt
-
+from torch.distributions import Gamma, Normal
 class MeanField:
     def __init__(self, 
                 n_particles:int=2,
@@ -155,3 +155,54 @@ def set_up_ham(omega0:float= 1.0,
     H = LazyTimeHamiltonian(Mf, dt=dt)
     M = Magnus(H, order=order, dt = dt)
     return M, H
+
+class LazyNeutrino:
+    def __init__(self,
+                 num_sample:int = 100,
+                 c:float = c,
+                 num_particles:int = 2,
+                 requires_grad:bool = True,
+                 num_steps:int = 10,
+                 device:int|str = 0,
+                 gparms:tuple[float,float] = (.2,.25)
+                ):
+        self.num_sample = num_sample
+        self.num_particles = num_particles
+        self.AngleSampler = Normal(torch.pi/4, .25)
+        self.TimeSampler = Gamma(gparms[0], gparms[1])
+        self.num = num_steps
+        self.n = 0
+        self.requires_grad = requires_grad
+        return
+
+    def __getitem__(self, index:int)->Tensor:
+        vals = torch.zeros(self.num_sample, 2**self.num_particles+1, dtype = torch.complex64)
+        
+        U = torch.empty((self.num_sample, self.num_particles,2, 2),dtype = torch.complex64)
+        Theta = self.AngleSampler.rsample((self.num_sample, self.num_particles))
+        U[:,:,0,0] = torch.cos(Theta[:,:])
+        U[:,:,1,1] = torch.cos(Theta[:,:])
+        U[:,:,0,1] = torch.sin(Theta[:,:])
+        U[:,:,1,0] = -torch.sin(Theta[:,:])
+        psi_0 = torch.zeros((2), dtype = torch.complex64)
+        psi_0[0] = 1
+        A = einsum('Amki, i->Amk', U, psi_0)
+        T = A[:,0]
+        for i in range(1, self.num_particles):
+          T = torch.einsum('Ak, Ai-> Aki', T, A[:,i]).reshape(A.shape[0], T.shape[1]*A.shape[2])
+        vals[:, :-1] = T
+        vals[:,-1] = self.TimeSampler.rsample((self.num_sample,))
+        return vals, torch.empty((1,))
+    
+    def __iter__(self)->object:
+        return self
+    
+    def __next__(self):
+        if(self.n < self.num):
+            self.n+=1
+            return self.__getitem__(0)
+        else:
+            self.n = 0
+            raise StopIteration
+    def __len__(self)-> int:
+        return self.num
