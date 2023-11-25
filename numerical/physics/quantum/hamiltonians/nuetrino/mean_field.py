@@ -56,7 +56,7 @@ class MeanField:
         return  
     
     def __call__(self, t:torch.Tensor) -> torch.Tensor:
-        return hamiltonian_operator(self.H0, self.H1, t, self.r, self.Rv, self.N, self.mu0)
+        return hamiltonian_operator(self.H0, self.H1, t, self.r, self.Rv, self.v, self.N, self.mu0)
     
     def to(self, device:str|int):
         self.device = device
