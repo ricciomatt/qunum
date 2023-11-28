@@ -153,7 +153,7 @@ class TQobj(Tensor):
     def entropy(self,)->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        return (ventropy(torch.tensor(self.data.detach().numpy(), dtype = torch.complex64)), self._metadata)
+        return ventropy(torch.tensor(self.data.detach().numpy(), dtype = torch.complex64))
     
     def __getitem__(self, index):
         item = super(TQobj, self).__getitem__(index)
