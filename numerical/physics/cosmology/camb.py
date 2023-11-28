@@ -1,10 +1,13 @@
 import warnings
 try:    
     import camb
-    from camb import CAMBparams
+    from camb import CAMBparams, CAMBdata
 except:
     warnings.warn('Camb Not Installed')
     class CAMBparams:
+        def __init__():
+            pass
+    class CAMBdata:
         def __init__():
             pass
 import numpy as np
@@ -57,7 +60,7 @@ class CAMBGenerator:
         self.n = 0
         
         self.num_samples=num_samples
-        self.pars = camb.CAMBparams
+        self.pars = CAMBparams
         self.iter_funct = iter_funct
         return 
     
@@ -232,9 +235,9 @@ class CAMBGenerator:
                "\nstep sizes= "+str(self.dp))
     
 @nb.jit(forceobj=True)
-def get_Pk(pars:camb.CAMBparams,
+def get_Pk(pars:CAMBparams,
            tp:npt.NDArray, 
-           kmax:int|float)->camb.CAMBdata:
+           kmax:int|float)->CAMBdata:
     """_summary_
 
     Args:

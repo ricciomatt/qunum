@@ -7,7 +7,7 @@ import polars as pl
 from numpy.typing import NDArray
 from .meta import OperMeta
 from ..operations import ptrace_ix, vgc, ventropy
-
+from .sqobj import SQobj
 class QCirc(Matrix):
     def __init__(self, *args,
                  meta:OperMeta|None = None, 
@@ -26,7 +26,7 @@ class QCirc(Matrix):
         return
     
     def dag(self)->object:
-        return Operator(self.conjugate().T, self._metadata)
+        return SQobj(self.conjugate().T, self._metadata)
 
     def ptrace(self, keep_ix:tuple[int]|list[int])->object:
         a = vgc(keep_ix)
@@ -39,7 +39,7 @@ class QCirc(Matrix):
                     pl.col('row_nr').implode().alias('ix')
                 ).fetch().sort(a)['ix'].to_list()
             )[:,0]
-        return Operator(ptrace_ix(ix_, np.array(self)), meta = self._metadata)
+        return SQobj(ptrace_ix(ix_, np.array(self)), meta = self._metadata)
     
     def pT(self, ix_T:tuple[int]|list[int])->object:
         a = vgc(ix_T)
