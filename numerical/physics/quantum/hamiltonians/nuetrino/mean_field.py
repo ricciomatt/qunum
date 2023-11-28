@@ -27,7 +27,7 @@ class MeanField:
         J = get_J(n_particles, get_pauli(n_particles))
         if(omega is not None):
             self.w = omega
-            self.w0 = omega.min()
+            self.w0 = omega.real.min()
         else:
             self.w = torch.arange(1, n_particles+1)*omega_0
             self.w = torch.complex(self.w, torch.zeros_like(self.w))
