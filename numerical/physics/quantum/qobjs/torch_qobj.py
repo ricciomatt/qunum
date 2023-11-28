@@ -101,20 +101,60 @@ class TQobj(Tensor):
         return TQobj(pT_arr(torch.tensor(self), ix_), meta = self._metadata)
     
     def __matmul__(self, O:object|Tensor)->object:
+        if not (isinstance(O, TQobj) or isinstance(O,Tensor)):
+            raise TypeError('Must Be TQobj or Tensor')
         try:
             meta = self._metadata
         except:
             meta = O._metadata
-        M = self.__mul__(O)
+        M = super(TQobj, self).__mul__(O)
+        if(M.shape == (1,1)):
+            return M
+        else:
+            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+   
+    def __rmatmul__(self, O:object|Tensor)->object:
+        return self.__matmul__(O)
+    
+    
+    def __mul__(self, O:object|Tensor)->object:
+        if not (isinstance(O, TQobj) or isinstance(O,Tensor)):
+            raise TypeError('Must Be TQobj or Tensor')
+        try:
+            meta = self._metadata
+        except:
+            meta = O._metadata
+        M = super(TQobj, self).__mul__(O)
         if(M.shape == (1,1)):
             return M
         else:
             return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
     
+    def __rmul__(self, O:object|Tensor)->object:
+        return self.__mul__(O)
+    
+    
+    def __add__(self, O:object|Tensor|float|int)->object:
+        if not (isinstance(O, TQobj) or isinstance(O,Tensor) or isinstance(O,float) or isinstance(O,int) or isinstance(O,complex)):
+            raise TypeError('Must Be TQobj or Tensor')
+        try:
+            meta = self._metadata
+        except:
+            meta = O._metadata
+        M = super(TQobj, self).__add__(O)
+        if(M.shape == (1,1)):
+            return M
+        else:
+            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+    
+    def __radd__(self, O:object|Tensor)->object:
+        return self.__add__(O)
+    
     def entropy(self, ix:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
         return (ventropy(torch.tensor(self)), self._metadata)
+    
     def __getitem__(self, index):
         item = super(TQobj, self).__getitem__(index)
         try:

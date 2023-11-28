@@ -70,33 +70,40 @@ class SQobj(Matrix):
             meta = self._metadata
         except:
             meta = O._metadata
-        M = self.multiply(O)
+        M = super(SQobj,self).__mul__(O)
         if(M.shape == (1,1)):
             return M
         else:
             return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+    
+    def __rmatmul__(self, O:object|Matrix)->object:
+        return self.__matmul__(O)
     
     def __mul__(self, O:object|Matrix|int|Symbol)->object:
         try:
             meta = self._metadata
         except:
             meta = O._metadata
-        M = self.multiply(O)
+        M = super(SQobj,self).__mul__(O)
         if(M.shape == (1,1)):
             return M
         else:
             return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
     
+    def __rmul__(self, O:object|Matrix|int|Symbol)->object:
+        return self.__mul__(O)
     def __add__(self, O:object|Matrix)->object:
         try:
             meta = self._metadata
         except:
             meta = O._metadata
-        M = self._eval_add(O)
+        M = super(SQobj, self)._eval_add(O)
         if(M.shape == (1,1)):
             return M
         else:
             return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+    def __radd__(self, O:object|Matrix)->object:
+        return self.__add__(O)
         
     def entropy(self, ix:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
