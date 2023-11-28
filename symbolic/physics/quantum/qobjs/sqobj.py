@@ -108,7 +108,7 @@ class SQobj(Matrix):
     def entropy(self)->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        return (ventropy(Matrix(self)), self._metadata)
+        return (ventropy(Matrix(self)))
     
     def __repr__(self):
         try:
