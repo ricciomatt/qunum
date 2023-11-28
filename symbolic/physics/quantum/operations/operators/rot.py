@@ -2,7 +2,7 @@ from ...qobjs.sqobj import SQobj
 from sympy import Matrix, kronecker_product as d_prod, Symbol, sin, I, cos
 from ......numerical.algebra.representations.su import get_pauli
 def rn(theta:Symbol|Matrix, n_vec:Matrix, n_particles:int)->SQobj:
-    sigma = [SQobj(i, n_particles =1, hilber_space_dims = 2) for i  in get_pauli(include_identity=True)]
+    sigma = [SQobj(i, n_particles =1, hilbert_space_dims = 2) for i  in get_pauli(include_identity=True)]
     A = Matrix.zeros(2,2)
     try:
         theta[0]
@@ -16,7 +16,7 @@ def rn(theta:Symbol|Matrix, n_vec:Matrix, n_particles:int)->SQobj:
     return SQobj(A, n_particles = 1, hilbert_space_dims = 2)
 
 def r_dir(theta:float|Symbol, dir = 'x')->SQobj:
-    sigma = [SQobj(i, n_particles =1, hilber_space_dims = 2) for i  in get_pauli(include_identity=True)]
+    sigma = [SQobj(i, n_particles =1, hilbert_space_dims = 2) for i  in get_pauli(include_identity=True)]
     ix = {'x':1, 'y':2, 'z':3}
     if(dir not in ix):
         raise ValueError('must be x,y,or z')

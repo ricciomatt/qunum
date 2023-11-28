@@ -105,7 +105,7 @@ class SQobj(Matrix):
     def __radd__(self, O:object|Matrix)->object:
         return self.__add__(O)
         
-    def entropy(self, ix:tuple[int]|list[int])->object:
+    def entropy(self)->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
         return (ventropy(Matrix(self)), self._metadata)
