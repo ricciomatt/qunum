@@ -28,7 +28,7 @@ def ptrace_torch_ix(ix:torch.Tensor, p:torch.Tensor)->torch.Tensor:
         pA = torch.zeros(p.shape[0], ix.shape[0], ix.shape[0], dtype = p.dtype)
         for i in range(ix.shape[0]):
             for j in range(ix.shape[0]):
-                pA[:, i,j] = p[:, ix[i], ix[j]].sum(dim = [1,2])
+                pA[:, i,j] = p[:, ix[i], ix[j]].sum(dim = [1])
     return pA
 
 

@@ -7,8 +7,34 @@ import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
 from ..operators.density_operations import ptrace_torch_ix as ptrace_ix, vgc, pT_arr, ventropy
+import torch
+import polars as pl
+from numpy.typing import NDArray
+from typing import Sequence
+
+from warnings import warn
+import copy
+from IPython.display import display as disp, Markdown as md, Math as mt
+from torch import Tensor
+
 class TQobj(Tensor):
+    def __new__(cls, 
+                data,
+                 *args,
+                 meta:QobjMeta|None = None, 
+                 n_particles:int = 1, 
+                 hilbert_space_dims:int =2,
+                 sparsify:bool = True,
+                 **kwargs):
+        #obj = super(TQobj,cls).__new__(cls, data,*args, dtype = torch.complex64,**kwargs)
+        if(isinstance(data, torch.Tensor)):
+            data = torch.tensor(data.detach().numpy(), dtype=torch.complex64)
+        else:
+            data = torch.tensor(data, dtype=torch.complex64)
+        obj = super(TQobj, cls).__new__(cls, data, *args, **kwargs)
+        return obj
     def __init__(self, 
+                 data,
                  *args,
                  meta:QobjMeta|None = None, 
                  n_particles:int = 1, 
@@ -25,8 +51,8 @@ class TQobj(Tensor):
         else:
             self._metadata = meta
         
-        if(sparsify):
-            self.to_sparse_qobj()
+        #if(sparsify):
+         #   self.to_sparse_qobj()
         return
     
     def to_sparse_qobj(self)->None:
@@ -39,7 +65,11 @@ class TQobj(Tensor):
             meta.obj_tp = 'bra'
         elif(self._metadata.obj_tp == 'bra'):
             meta.obj_tp = 'ket'
-        return TQobj(self.conjugate().T, meta= meta)
+        if(len(self.shape)==3):
+            
+            return TQobj(torch.transpose(self.data.resolve_conj(), 1,2), meta= meta)
+        else: 
+            return TQobj(self.data.resolve_conj().T.numpy(), meta= meta)
 
     def ptrace(self, keep_ix:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
@@ -86,11 +116,10 @@ class TQobj(Tensor):
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
         return (ventropy(torch.tensor(self)), self._metadata)
-    
-    def __repr__(self):
+    def __getitem__(self, index):
+        item = super(TQobj, self).__getitem__(index)
         try:
-            disp(md('Object Type: '+self._metadata.obj_tp))
-            disp(md('Particles: '+ str(self._metadata.n_particles)+', Hilbert: '+str(self._metadata.hilber_space_dims)))
+            item._metadata = self._metadata
         except:
             pass
-        return self.__str__()
+        return item

@@ -1,1 +1,2 @@
-from .qobjs import Operator
+from .qobjs import SQobj
+from .operations import direct_prod

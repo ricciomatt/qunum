@@ -1,4 +1,4 @@
-from sympy import Matrix, eye
+from sympy import Matrix, eye, MatAdd, Symbol
 import numpy as np
 import polars as pl
 from numpy.typing import NDArray
@@ -33,7 +33,7 @@ class SQobj(Matrix):
             meta.obj_tp = 'bra'
         elif(self._metadata.obj_tp == 'bra'):
             meta.obj_tp = 'ket'
-        return SQobj(self.conjugate().T, meta= meta)
+        return SQobj(self.adjoint(), meta= meta)
 
     def ptrace(self, keep_ix:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
@@ -70,12 +70,34 @@ class SQobj(Matrix):
             meta = self._metadata
         except:
             meta = O._metadata
-        M = self.__mul__(O)
+        M = self.multiply(O)
         if(M.shape == (1,1)):
             return M
         else:
             return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
     
+    def __mul__(self, O:object|Matrix|int|Symbol)->object:
+        try:
+            meta = self._metadata
+        except:
+            meta = O._metadata
+        M = self.multiply(O)
+        if(M.shape == (1,1)):
+            return M
+        else:
+            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+    
+    def __add__(self, O:object|Matrix)->object:
+        try:
+            meta = self._metadata
+        except:
+            meta = O._metadata
+        M = self._eval_add(O)
+        if(M.shape == (1,1)):
+            return M
+        else:
+            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+        
     def entropy(self, ix:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')

@@ -7,6 +7,7 @@ from ..operators.density_operations import ptrace_torch_ix as ptrace_ix, vgc
 import polars as pl 
 import numpy as np
 import warnings
+from IPython.display import display as disp, Markdown as md, Math as mt
 
 class QobjMeta:
     def __init__(self, n_particles:int= None, hilbert_space_dims:int = 2, shp:tuple[int] = None, check_hermitian:bool = False)->None:
@@ -34,7 +35,7 @@ class QobjMeta:
             
         if(hilbert_space_dims**n_particles == shp[0]):
             self.n_particles = n_particles
-            self.hilber_space_dims = hilbert_space_dims
+            self.hilbert_space_dims = hilbert_space_dims
             self.ixs = pl.DataFrame(
                 np.array(
                     np.meshgrid(
@@ -44,7 +45,7 @@ class QobjMeta:
                     n_particles
                     )).with_row_count().lazy()
         elif(hilbert_space_dims == 2):
-            self.hilber_space_dims = hilbert_space_dims
+            self.hilbert_space_dims = hilbert_space_dims
             self.n_particles = n_particles
             self.ixs = pl.DataFrame(
                 np.array(
@@ -58,3 +59,6 @@ class QobjMeta:
         else:
             raise RuntimeError('Operators must have dimensions specified')
         return    
+    def __str__(self):
+        return mt('$$n_{particles}= '+str(self.n_particles)+'\\\\'+' n_{hilbert\\;dims}= '+str(self.hilbert_space_dims)+'\\\\type='+str(self.obj_tp)+'$$')
+        
