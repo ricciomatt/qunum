@@ -111,7 +111,7 @@ class TQobj(Tensor):
         if(M.shape == (1,1)):
             return M
         else:
-            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
    
     def __rmatmul__(self, O:object|Tensor)->object:
         return self.__matmul__(O)
@@ -128,7 +128,7 @@ class TQobj(Tensor):
         if(M.shape == (1,1)):
             return M
         else:
-            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
     
     def __rmul__(self, O:object|Tensor)->object:
         return self.__mul__(O)
@@ -145,7 +145,7 @@ class TQobj(Tensor):
         if(M.shape == (1,1)):
             return M
         else:
-            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
     
     def __radd__(self, O:object|Tensor)->object:
         return self.__add__(O)

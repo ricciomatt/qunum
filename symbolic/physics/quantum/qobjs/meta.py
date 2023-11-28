@@ -12,7 +12,7 @@ class OperMeta:
         warnings.warn('Operator is deprecated use the more general SQobj instead')
         if(hilbert_space_dims**n_particles == shp[0]):
             self.n_particles = n_particles
-            self.hilber_space_dims = hilbert_space_dims
+            self.hilbert_space_dims = hilbert_space_dims
             self.ixs = pl.DataFrame(
                 np.array(
                     np.meshgrid(
@@ -22,7 +22,7 @@ class OperMeta:
                     n_particles
                     )).with_row_count().lazy()
         elif(hilbert_space_dims == 2):
-            self.hilber_space_dims = hilbert_space_dims
+            self.hilbert_space_dims = hilbert_space_dims
             self.n_particles = n_particles
             self.ixs = pl.DataFrame(
                 np.array(
@@ -65,7 +65,7 @@ class SQobjMeta:
             
         if(hilbert_space_dims**n_particles == shp[0]):
             self.n_particles = n_particles
-            self.hilber_space_dims = hilbert_space_dims
+            self.hilbert_space_dims = hilbert_space_dims
             self.ixs = pl.DataFrame(
                 np.array(
                     np.meshgrid(
@@ -75,7 +75,7 @@ class SQobjMeta:
                     n_particles
                     )).with_row_count().lazy()
         elif(hilbert_space_dims == 2):
-            self.hilber_space_dims = hilbert_space_dims
+            self.hilbert_space_dims = hilbert_space_dims
             self.n_particles = n_particles
             self.ixs = pl.DataFrame(
                 np.array(

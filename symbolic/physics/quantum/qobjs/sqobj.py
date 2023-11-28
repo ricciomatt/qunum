@@ -74,7 +74,7 @@ class SQobj(Matrix):
         if(M.shape == (1,1)):
             return M
         else:
-            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
     
     def __rmatmul__(self, O:object|Matrix)->object:
         return self.__matmul__(O)
@@ -88,7 +88,7 @@ class SQobj(Matrix):
         if(M.shape == (1,1)):
             return M
         else:
-            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
     
     def __rmul__(self, O:object|Matrix|int|Symbol)->object:
         return self.__mul__(O)
@@ -101,7 +101,7 @@ class SQobj(Matrix):
         if(M.shape == (1,1)):
             return M
         else:
-            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilber_space_dims)
+            return SQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
     def __radd__(self, O:object|Matrix)->object:
         return self.__add__(O)
         
@@ -113,7 +113,7 @@ class SQobj(Matrix):
     def __repr__(self):
         try:
             disp(md('Object Type: '+self._metadata.obj_tp))
-            disp(md('Particles: '+ str(self._metadata.n_particles)+', Hilbert: '+str(self._metadata.hilber_space_dims)))
+            disp(md('Particles: '+ str(self._metadata.n_particles)+', Hilbert: '+str(self._metadata.hilbert_space_dims)))
         except:
             pass
         return self.__str__()
