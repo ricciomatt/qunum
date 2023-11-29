@@ -149,9 +149,7 @@ def expansion(H:torch.Tensor,
                     for m in range(1, i-k):
                         print(m)
                         S[n, j] += comm(Omega[n-m], S[n-m,j-1])
-                
                 Omega[n] +=  Bk[i]/torch.math.factorial(i) * S[n,j].cumsum(dim = 0)*dx
-               
     return Omega
 
         

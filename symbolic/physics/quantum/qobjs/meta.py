@@ -44,17 +44,23 @@ class SQobjMeta:
         if(len(shp) == 2):
             if(shp[0] == 1):
                 self.obj_tp = 'bra'
+                l = shp[1]
             elif(shp[1] == 1):
                 self.obj_tp = 'ket'
+                l = shp[0]
             else:
                 self.obj_tp = 'operator'
+                l = shp[0]
         elif(len(shp) == 3):
             if(shp[2] == 1):
                 self.obj_tp = 'ket'
+                l = shp[1]
             elif(shp[1] == 1):
                 self.obj_tp = 'bra'
+                l = shp[2]
             else:
                 self.obj_tp = 'operator'
+                l = shp[1]
         else:
             raise IndexError('Only Object of Size 2 and 3')
         if(check_hermitian):
@@ -76,7 +82,7 @@ class SQobjMeta:
                     )).with_row_count().lazy()
         elif(hilbert_space_dims == 2):
             self.hilbert_space_dims = hilbert_space_dims
-            self.n_particles = n_particles
+            self.n_particles = np.log2(l)
             self.ixs = pl.DataFrame(
                 np.array(
                     np.meshgrid(
