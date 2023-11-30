@@ -82,7 +82,7 @@ class SQobjMeta:
                     )).with_row_count().lazy()
         elif(hilbert_space_dims == 2):
             self.hilbert_space_dims = hilbert_space_dims
-            self.n_particles = np.log2(l)
+            self.n_particles = int(np.log2(l))
             self.ixs = pl.DataFrame(
                 np.array(
                     np.meshgrid(
