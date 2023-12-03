@@ -1,6 +1,6 @@
 from typing import Any
 import torch
-from ....data.data_loaders.physics.quantum.hamiltonian import LazyTimeHamiltonian
+from .....physics.data.hamiltonian import LazyTimeHamiltonian
 import numpy as np
 from .....lattice_operators.integrators import NewtonCoates, integrate_newton_coates_do as newton
 from scipy.special import bernoulli

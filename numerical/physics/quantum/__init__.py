@@ -1,3 +1,4 @@
-from . import algorithms
+from . import qcomp
 from . import qobjs
-import loss_functions as lf
+from . import loss_functions as lf
+from .qobjs import *

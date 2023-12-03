@@ -1,13 +1,16 @@
 import torch 
-from ...data import PhysikLoader, DataLoader, LazyLattice
+from ...data import DataLoader, LazyLattice
 from ...metrics.numerical import ModelTracker
 from tqdm import tqdm
 from typing import Callable
 from ...metrics.numerical import mean_accuracy
 import numpy as np
+class PhysicsDataGenerator:
+    def __init__(self) -> None:
+        pass
 
 def grad_descent(Model:torch.nn.Module,
-                 dataLoader:PhysikLoader|DataLoader|LazyLattice,
+                 dataLoader:DataLoader|LazyLattice|PhysicsDataGenerator,
                  Optimizer:torch.optim.Optimizer,
                  epochs:int = int(1e1), 
                  batch_steps:int= 1,

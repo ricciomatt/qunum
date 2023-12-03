@@ -6,11 +6,12 @@ import numba as nb
 from qutip import tensor, basis, Qobj
 import numpy as np
 from ......constants import c as c
-from ......seml.fitting_algos import Magnus
+from ......seml.fitting_algos.numerical_solvers.magnus import Magnus
 from ......algebra.representations.su import get_pauli
 from .....data.hamiltonian import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch.distributions import Gamma, Normal
+
 class MeanField:
     def __init__(self, 
                 n_particles:int=2,
