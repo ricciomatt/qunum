@@ -34,17 +34,18 @@ def ptrace_torch_ix(ix:torch.Tensor, p:torch.Tensor)->torch.Tensor:
 
 
 @torch.jit.script
-def ventropy(p:torch.Tensor)->torch.Tensor:
+def ventropy(p:torch.Tensor, epsi:float = 1e-8)->torch.Tensor:
     if(len(p.shape) == 2):
         Lam  = torch.linalg.eigvals(p)
         S = torch.tensor([0.0])
         for i, lam in enumerate(Lam):
-            S+=lam*torch.log(lam)
+            t = lam*torch.log(lam+epsi)
+            S+=t      
     else:
         Lam  = torch.linalg.eigvals(p)
         S = torch.zeros(p.shape[0], dtype=Lam.dtype)
         for i in range(Lam.shape[1]):
-            S+=Lam[:,i]*torch.log(Lam[:,i])
+            S+=Lam[:,i]*torch.log(Lam[:,i]+epsi)
     return S
 
 @torch.jit.script

@@ -8,7 +8,7 @@ import numpy as np
 from .....constants import c as c
 from .....seml.fitting_algos import Magnus
 from .....algebra.representations.su import get_pauli
-from .....seml.data.data_loaders.physics.quantum import LazyTimeHamiltonian
+from ....data.hamiltonian import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch.distributions import Gamma, Normal
 class MeanField:

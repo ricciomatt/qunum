@@ -1,7 +1,7 @@
 import torch
 from torch import autograd as AutoGrad, einsum
 from typing import Callable
-from ....seml.data.data_loaders import LazyTimeHamiltonian
+from ...data.hamiltonian import LazyTimeHamiltonian
 import numba as nb
 
 class TimeIndependentHamiltonain:
