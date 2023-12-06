@@ -11,6 +11,24 @@ from ......algebra.representations.su import get_pauli
 from .....data.hamiltonian import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch.distributions import Gamma, Normal
+from ....qobjs import TQobj
+from ....operators.dir_prod import direct_prod
+from typing import Callable
+@torch.jit.script
+def mu(t:torch.Tensor, mu0:float, Rv:float, r_0:float)->torch.Tensor:
+    return mu0*( 1 - torch.sqrt(1 - ((Rv/(r_0 + t))**(2)) ) )**(2)
+       
+@torch.jit.script
+def hamiltonian_operator(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor, r:float, Rv:float, v:float, )->torch.Tensor:
+    u = torch.pow(1-torch.sqrt(1-torch.pow(Rv/(r+v*t),2)),2)
+    a = torch.ones(u.shape[0], dtype = torch.complex64)
+    return (einsum('n, ij->nij', a.to(H_0.device), H_0) + einsum('n,ij->nij',(u), H_1))
+
+@torch.jit.script
+def hamiltonian_operator_exp(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor, r:float, Rv:float, v:float, )->torch.Tensor:
+    u = (Rv/r)*torch.exp(-t*v)
+    a = torch.ones(u.shape[0], dtype = torch.complex64)
+    return (einsum('n, ij->nij', a.to(H_0.device), H_0) + einsum('n,ij->nij',(u), H_1))
 
 class MeanField:
     def __init__(self, 
@@ -23,6 +41,7 @@ class MeanField:
                 r_0:float = 50e6,
                 v:float = c,
                 device:int|str = '0',
+                operator:Callable= hamiltonian_operator,
                 ):
         
         J = get_J(n_particles, get_pauli(n_particles))
@@ -47,7 +66,8 @@ class MeanField:
         self.N = float(n_particles)
         self.flavors = flavors
         self.device = device
-        
+        self.H1 *= self.mu0/self.N 
+        self.O = operator
         try:
             self.H0.to(device)
             self.H1.to(device)
@@ -60,7 +80,7 @@ class MeanField:
         return  
     
     def __call__(self, t:torch.Tensor) -> torch.Tensor:
-        return hamiltonian_operator(self.H0, self.H1, t, self.r, self.Rv, self.v, self.N, self.mu0)
+        return self.O(self.H0, self.H1, t, self.r, self.Rv, self.v)
     
     def to(self, device:str|int):
         self.device = device
@@ -75,14 +95,7 @@ class MeanField:
         disp(md(f'''$$\\mathcal{'{H}'}_{'{0}'} = {latex(Matrix(self.H0.real.detach().numpy())+ I *Matrix(self.H0.imag.detach().numpy()))}$$'''))
         disp(md(f'''$$\\mathcal{'{H}'}_{'{1}'} = {latex(Matrix(self.H1.real.detach().numpy())+ I *Matrix(self.H1.imag.detach().numpy()))}$$'''))
         return f'{str(int(self.N))} Particle {str(int(self.flavors))} Flavor, Mean Field Neutrino Hamiltonian. '
-        
-@torch.jit.script
-def hamiltonian_operator(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor, r:float, Rv:float, v:float, N:float, mu0:float)->torch.Tensor:
-    u = mu0/N*torch.pow(1-torch.sqrt(1-torch.pow(Rv/(r+v*t),2)),2)
-    a = torch.ones(u.shape[0], dtype = torch.complex64)
-    return (einsum('n, ij->nij', a.to(H_0.device), H_0) + einsum('n,ij->nij',(u), H_1))
-
-
+ 
 @torch.jit.script
 def get_J(n:int, sigma:torch.Tensor)->torch.Tensor:
     J = torch.empty((n, 3, int(sigma.shape[1]**n), int(sigma.shape[1]**n)), dtype = torch.complex64)
@@ -100,11 +113,13 @@ def get_J(n:int, sigma:torch.Tensor)->torch.Tensor:
             J[j,i] = temp
     return J/2
 
-@nb.jit(forceobj = True)
-def init_psi(n:int, theta:float = np.pi/5)->Qobj:
-    b = basis(2,0)
-    Uh = Qobj(np.array([[np.cos(theta), np.sin(theta)],[-np.sin(theta), np.cos(theta)]]))
-    return tensor([Uh*b for i in range(n)])
+def init_psi(n:int, theta:float = np.pi/5)->TQobj:
+    b = TQobj(torch.tensor([[1,0]], dtype=torch.complex64), n_particles=1, hilbert_space_dims=2)
+    Uh = TQobj(torch.tensor([[np.cos(theta), np.sin(theta)],[-np.sin(theta), np.cos(theta)]]), n_particles=1, hilbert_space_dims=2)
+    args = (Uh @ b.dag() for i in range(n))
+    args2 =  (Uh  for i in range(n))
+    return direct_prod(*args), direct_prod(tuple(args2))
+    
 
 @torch.jit.script
 def H0(omega:torch.Tensor, J:torch.Tensor)->torch.Tensor:
@@ -115,14 +130,17 @@ def H1(J:torch.Tensor)->torch.Tensor:
     H_1 = torch.zeros((J.shape[2:]), dtype = J.dtype)
     for p in range(J.shape[0]):
         for q in range(J.shape[0]):
-            if(p<q):
+            if(p!=q):
                 H_1 += einsum('mij, mjk-> ik', J[p], J[q])
     return H_1
 
-
 @torch.jit.script
-def mu(t:torch.Tensor, mu0:float, Rv:float, r_0:float)->torch.Tensor:
-    return mu0*( 1 - torch.sqrt(1 - ((Rv/(r_0 + t))**(2)) ) )**(2)
+def H11(J:torch.Tensor)->torch.Tensor:
+    H_1 = torch.zeros((J.shape[2:]), dtype = J.dtype)
+    J = J.sum(dim = 0)
+    return einsum('mij, mjk->ik',J,J)
+
+
 
 @torch.jit.script
 def nuetrino_hamiltonian(t:torch.Tensor,
@@ -145,17 +163,18 @@ def set_up_ham(omega0:float= 1.0,
               Rv:float= 50e6,
               r_0:float = 50e6, 
               v:float  = c, 
-              mu0_mult:None|float=10., 
+              mu0_mult:None|float=1e4, 
               num_particles:int = 3,
              order:int = 4, 
              dt:float = 1e-3,
-             device:int|str = 0)->torch.Tensor:
+             device:int|str = 0,
+             operator:Callable= hamiltonian_operator)->torch.Tensor:
     if(omega_mult is None):
         omega_mult = torch.tensor(torch.arange(1,num_particles+1).numpy(), dtype = torch.complex64)
     omega = omega_mult*omega0
     mu0 = mu0_mult*omega0
     v = c
-    Mf = MeanField(num_particles, omega=omega, mu0=mu0, Rv=Rv, r_0=r_0, v=v, device=device)
+    Mf = MeanField(num_particles, omega=omega, mu0=mu0, Rv=Rv, r_0=r_0, v=v, device=device, operator=operator)
     H = LazyTimeHamiltonian(Mf, dt=dt)
     M = Magnus(H, order=order, dt = dt)
     return M, H

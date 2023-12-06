@@ -2,19 +2,15 @@ import torch
 import polars as pl
 from numpy.typing import NDArray
 from .meta import QobjMeta
-from warnings import warn
+from typing import Iterable
 import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
 from ..operators.density_operations import ptrace_torch_ix as ptrace_ix, vgc, pT_arr, ventropy
-import torch
-import polars as pl
-from numpy.typing import NDArray
-from typing import Sequence
 from warnings import warn
-import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
+import numpy as np 
 
 class TQobj(Tensor):
     def __new__(cls, 
@@ -61,15 +57,13 @@ class TQobj(Tensor):
             meta = self._metadata
         except:
             meta = O._metadata
-        M = super(TQobj, self).__mul__(O)
+        M = super(TQobj, self).__matmul__(O)
         if(M.shape == (1,1)):
             return M
         else:
             return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
     
-    def __mul__(self, O:object|Tensor)->object:
-        if not (isinstance(O, TQobj) or isinstance(O,Tensor)):
-            raise TypeError('Must Be TQobj or Tensor')
+    def __mul__(self, O:object|Tensor|float|int)->object:
         try:
             meta = self._metadata
         except:
@@ -78,7 +72,10 @@ class TQobj(Tensor):
         if(M.shape == (1,1)):
             return M
         else:
-            return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
+            try:
+                return TQobj(M, n_particles = meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims)
+            except:
+                return torch.tensor(M.numpy())
     
    
     
@@ -116,15 +113,18 @@ class TQobj(Tensor):
         elif(self._metadata.obj_tp == 'bra'):
             meta.obj_tp = 'ket'
         if(len(self.shape)==3):
-            
-            return TQobj(torch.transpose(self.data.resolve_conj(), 1,2), meta= meta)
+            self.conj()
+            return TQobj(torch.transpose(torch.tensor(self.data.numpy().conjugate()), 1,2), meta= meta)
         else: 
-            return TQobj(self.data.resolve_conj().T.numpy(), meta= meta)
+            return TQobj(self.data.numpy().conjugate().T, meta= meta)
 
-    def ptrace(self, keep_ix:tuple[int]|list[int])->object:
+    def ptrace(self, tr_out:tuple[int]|list[int])->object:
+        warn('ptrace is Deprecated use rho_BC = obj.Tr([0]) or NormConstants = obj.Tr()')
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        a = vgc(keep_ix)
+        ix = np.arange(self._metadata.n_particles)
+        ix = np.delete(ix,tr_out)
+        a = vgc(ix)
         ix_ =  torch.tensor(
             self._metadata.ixs.groupby(
                 pl.col(
@@ -134,7 +134,37 @@ class TQobj(Tensor):
                     pl.col('row_nr').implode().alias('ix')
                 ).fetch().sort(a)['ix'].to_list()
             )[:,0]
-        return TQobj(ptrace_ix(ix_, torch.tensor(self)), meta = self._metadata)
+        meta = copy.copy(self._metadata)
+        meta.n_particles -= 1
+        return TQobj(ptrace_ix(ix_, self.clone().detach()), meta = meta)
+
+    
+    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None):
+        if(self._metadata.obj_tp != 'operator'):
+            raise TypeError('Must be an operator')
+        if(tr_out is None):
+            if(len(self.shape) == 3):
+                shp = self.shape[1:]
+            else:
+                shp = self.shape
+            return torch.tensor(self.data.detach().clone().numpy())[:, torch.arange(shp[0]), torch.arange(shp[1])].sum(dim=1)
+        else:
+            ix = np.arange(self._metadata.n_particles)
+            ix = np.delete(ix, tr_out)
+            a = vgc(ix)
+            ix_ =  torch.tensor(
+                self._metadata.ixs.groupby(
+                    pl.col(
+                        a
+                        )
+                    ).agg(
+                        pl.col('row_nr').implode().alias('ix')
+                    ).fetch().sort(a)['ix'].to_list()
+                )[:,0]
+            meta = copy.copy(self._metadata)
+            meta.n_particles -= 1
+        return TQobj(ptrace_ix(ix_, self.clone().detach()), meta = meta)
+        
     
     def pT(self, ix_T:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
@@ -163,7 +193,14 @@ class TQobj(Tensor):
         except:
             pass
         return item
-
+    
+    def __repr__(self):
+        try:
+            disp(md(self._metadata.__str__()))
+        except:
+            disp('No meta data available')
+        return super(TQobj, self).__repr__()
+    
 
 
 

@@ -36,18 +36,22 @@ def ptrace_torch_ix(ix:torch.Tensor, p:torch.Tensor)->torch.Tensor:
 @torch.jit.script
 def ventropy(p:torch.Tensor, epsi:float = 1e-8)->torch.Tensor:
     if(len(p.shape) == 2):
-        Lam  = torch.linalg.eigvals(p)
+        Lam  = torch.linalg.eigvals(p).real
         S = torch.tensor([0.0])
         for i, lam in enumerate(Lam):
-            t = lam*torch.log(lam+epsi)
-            S+=t      
+            logLam = torch.log(Lam[:,i])
+            ix = torch.where(torch.isnan(logLam) | torch.isinf(logLam))[0]
+            logLam[ix] = 0 
+            S-=lam*logLam     
     else:
-        Lam  = torch.linalg.eigvals(p)
-        S = torch.zeros(p.shape[0], dtype=Lam.dtype)
+        Lam  = torch.linalg.eigvals(p).real
+        S = torch.zeros_like(Lam[:,0])
         for i in range(Lam.shape[1]):
-            S+=Lam[:,i]*torch.log(Lam[:,i]+epsi)
+            logLam = torch.log(Lam[:,i])
+            ix = torch.where(torch.isnan(logLam) | torch.isinf(logLam))[0]
+            logLam[ix] = 0
+            S-=Lam[:,i]*logLam   
     return S
-
 @torch.jit.script
 def pT_arr(p:torch.Tensor, ixs:torch.Tensor):
     k = torch.empty_like(p)

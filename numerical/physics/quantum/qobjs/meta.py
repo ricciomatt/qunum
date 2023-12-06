@@ -20,9 +20,9 @@ class QobjMeta:
                 self.obj_tp = 'operator'
         elif(len(shp) == 3):
             if(shp[1] == 1):
-                self.obj_tp = 'ket'
-            elif(shp[2] == 1):
                 self.obj_tp = 'bra'
+            elif(shp[2] == 1):
+                self.obj_tp = 'ket'
             else:
                 self.obj_tp = 'operator'
         else:
@@ -59,6 +59,9 @@ class QobjMeta:
         else:
             raise RuntimeError('Operators must have dimensions specified')
         return    
+    def __repr__(self):
+        return self.__str__()
+    
     def __str__(self):
-        return mt('$$n_{particles}= '+str(self.n_particles)+'\\\\'+' n_{hilbert\\;dims}= '+str(self.hilbert_space_dims)+'\\\\type='+str(self.obj_tp)+'$$')
+        return '$$n_{particles}= '+str(self.n_particles)+'\\\\'+' n_{hilbert\\;dims}= '+str(self.hilbert_space_dims)+'\\\\type='+str(self.obj_tp)+'$$'
         

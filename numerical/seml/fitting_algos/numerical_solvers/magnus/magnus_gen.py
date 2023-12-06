@@ -5,6 +5,8 @@ import numpy as np
 from .....lattice_operators.integrators import NewtonCoates, integrate_newton_coates_do as newton
 from scipy.special import bernoulli
 from torch import einsum
+from .....algebra import ad
+from IPython.display import display as disp, Math as Mt
 
 class Magnus:
     def __init__(self, 
@@ -14,7 +16,9 @@ class Magnus:
                  dt:float = 1e-3,
                  num_int:int = int(5e1),
                  Int:NewtonCoates= NewtonCoates(2, dtype=torch.complex64),
-                 set_iter_len:int=int(1e3))->None:
+                 set_iter_len:int=int(1e3),
+                 call_funct = 'gen_function'
+                 )->None:
         self.ix0 = ix0
         self.H = Hamiltonian
         self.set_order(order)
@@ -24,6 +28,7 @@ class Magnus:
         self.dt = dt
         self.iter = 1
         self.iter_len = set_iter_len
+        self.call_funct = call_funct
         return
     
     def reset_iter(self):
@@ -39,13 +44,12 @@ class Magnus:
         )
         return
     
-    def __call__(self, 
+    def gen_function(self, 
                  a:float=0., 
                  b:float=1.,
                  num_pts:int = int(1e2),
                  U0:None|torch.Tensor = None,
-                 raw_omega:bool = False,
-                )->torch.Tensor:
+                 raw_omega:bool = False,)->torch.Tensor:
         dx = (b-a)/num_pts
         x = torch.linspace(a, b, num_pts)
         H = self.H(x)
@@ -54,10 +58,18 @@ class Magnus:
             del H
             return Omega
         elif(U0 is None):
-            I = torch.complex(0,1)**torch.arange(1, self.order+1)
             U0 = torch.eye(H.shape[1], H.shape[1], dtype= torch.complex64)
             del H
-        return torch.linalg.matrix_exp(torch.einsum('o, Aojk->Ajk', I, Omega[1:])) @ U0
+        return torch.linalg.matrix_exp(Omega.sum(dim=0)) @ U0
+    
+    def __call__(self, 
+                 a:float=0., 
+                 b:float=1.,
+                 num_pts:int = int(1e2),
+                 U0:None|torch.Tensor = None,
+                 raw_omega:bool = False,
+                )->torch.Tensor:
+        return getattr(self, self.call_funct)(a,b,num_pts,U0,raw_omega=raw_omega)
     
     def __next__(self)->torch.Tensor:
         if(self.n<self.iter*self.iter_len):
@@ -104,6 +116,8 @@ class Magnus:
         Omega = torch.empty((4, H.shape[0], H.shape[1], H.shape[2]), dtype=torch.complex64)    
         Omega[0] = self.Int.cumeval(H, dx)
         Omega[1] = (1/2)*self.Int.cumeval(comm(H, Omega[0]), dx)
+        t = torch.einsum('ABij, Cjk -> ABCik',torch.einsum('Aij, Bjk -> ABik', H, H),H) 
+        Omega[2] = t.cumsum(dim = 0)
         Omega[2] = (1/6)*(self.Int.cumeval(comm(H, Omega[1]),dx) + self.Int.cumeval(torch.einsum('Aij, Ajk, Akm-> Aim', Omega[0], H, H), dx)) 
         
         Omega[3] = (1/12)*()
@@ -125,35 +139,44 @@ def expansion(H:torch.Tensor,
               dx:float,
               L:torch.Tensor)->torch.Tensor:
     H *= -1j
-    
     Omega = torch.zeros((order, H.shape[0], H.shape[1], H.shape[1]), dtype = torch.complex64)
     Omega[0] = newton(H.clone(), L).cumsum(dim=0)*dx
     Omega[0] = H.clone().cumsum(dim=0)*dx
     S = torch.zeros((order, order, H.shape[0], H.shape[1], H.shape[1]), dtype = torch.complex64)
-    
     if(order >= 2):
         for k in range(2, order+1):
             n = k-1
+            #st = f'\\Omega_{k} = '
             for i in range(1, k):
                 j = i-1
                 if(i == 1):
+                    #st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
                     t = H.clone()
-                    S[n,j] += comm(Omega[n-1], t)
-                
+                    S[n,j] = comm(Omega[n-1], t)
+                    #st+='[\\Omega_{'+str(n)+'}, (-iH)]'
                 elif(i == n):
-                    t = H.clone()
-                    for m in range(k-1):
-                        S[n,j] = comm(Omega[0], t)
-                        t = S[n,j].clone()
+                    
+                    #st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
+                    S[n,j] = ad(Omega[0], H.clone(), j)
+                    #st+='ad^{'+str(j+1)+'}_{\\Omega_{1}} (-iH) + '
                 else:
-                    for m in range(1, i-k):
-                        print(m)
+                    #st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
+                    for m in range(1, n-j):
                         S[n, j] += comm(Omega[n-m], S[n-m,j-1])
-                Omega[n] +=  Bk[i]/torch.math.factorial(i) * S[n,j].cumsum(dim = 0)*dx
+                     #   st+='[\\Omega_{'+str(n-m)+'}, S_{'+str(n-m)+'}^{'+str(j)+'}]+'
+                    #st = st.rstrip('+')
+                Omega[n] +=  Bk[i]/torch.math.factorial(i)*newton(S[n,j], L).cumsum(dim = 0)*dx
+            #disp(Mt(st))
+            #disp(Bk)
+                
     return Omega
 
-        
 
+
+
+def calc_Snj(Omega:torch.Tensor, n:int, j:int)->torch.Tensor:
+    torch.zeros(n,n-1, Omega.shape[1], Omega.shape[2])
+    pass
 
     
     
