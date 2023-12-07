@@ -73,7 +73,7 @@ class Magnus:
     
     def __next__(self)->torch.Tensor:
         if(self.n<self.iter*self.iter_len):
-            H = self.H(torch.linspace(self.n*self.dt, (self.n+1)*self.dt, self.num_int))
+            H = self.H(torch.linspace(self.n*self.dt - self.dt/2, (self.n+1/2)*self.dt, self.num_int))
             Omega = expansion(H, self.Bk, self.order, self.dt/self.num_int, self.Int.L)
             self.n+=1
             del H 
@@ -107,7 +107,7 @@ class Magnus:
     def fourth_order(self,
                     a:float=0.,
                     b:float=1.,
-                    num_pts:int=1e2,
+                    num_pts:int=int(1e2),
                     U0:None|torch.Tensor=None,
                     raw_omega:bool = False
                     )->torch.Tensor:
@@ -115,12 +115,11 @@ class Magnus:
         H = -1j*self.H(torch.linspace(a,b,num_pts, dtype=torch.complex64))
         Omega = torch.empty((4, H.shape[0], H.shape[1], H.shape[2]), dtype=torch.complex64)    
         Omega[0] = self.Int.cumeval(H, dx)
-        Omega[1] = (1/2)*self.Int.cumeval(comm(H, Omega[0]), dx)
-        t = torch.einsum('ABij, Cjk -> ABCik',torch.einsum('Aij, Bjk -> ABik', H, H),H) 
-        Omega[2] = t.cumsum(dim = 0)
-        Omega[2] = (1/6)*(self.Int.cumeval(comm(H, Omega[1]),dx) + self.Int.cumeval(torch.einsum('Aij, Ajk, Akm-> Aim', Omega[0], H, H), dx)) 
-        
-        Omega[3] = (1/12)*()
+        t = einsum('Aij, Bjk->ABik', H, H)
+        comm_ = t-einsum('ABij->BAij', t)
+        t = (1/2)*(comm_.cumsum(dim=1)*dx).cumsum(dim=0)*dx
+        Omega[1] = torch.swapaxes(torch.swapaxes(t.diagonal(), 2,1), 1,0)
+        print(Omega[1] + 1/2*comm(Omega[0], H))
         return Omega
     
 @torch.jit.script
@@ -132,12 +131,13 @@ def tpcomm(A:torch.Tensor,B:torch.Tensor):
     return torch.einsum('Aij, Bjk-> ABik', A, B) - torch.einsum('Aij, Bjk-> ABik', B, A)
 
     
-@torch.jit.script
+#@torch.jit.script
 def expansion(H:torch.Tensor, 
               Bk:torch.Tensor, 
               order:int,
               dx:float,
-              L:torch.Tensor)->torch.Tensor:
+              L:torch.Tensor, 
+              disp:bool = False)->torch.Tensor:
     H *= -1j
     Omega = torch.zeros((order, H.shape[0], H.shape[1], H.shape[1]), dtype = torch.complex64)
     Omega[0] = newton(H.clone(), L).cumsum(dim=0)*dx
@@ -146,28 +146,30 @@ def expansion(H:torch.Tensor,
     if(order >= 2):
         for k in range(2, order+1):
             n = k-1
-            #st = f'\\Omega_{k} = '
+            st = f'\\Omega_{k} = '
             for i in range(1, k):
                 j = i-1
                 if(i == 1):
-                    #st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
+                    st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
                     t = H.clone()
                     S[n,j] = comm(Omega[n-1], t)
-                    #st+='[\\Omega_{'+str(n)+'}, (-iH)]'
+                    st+='[\\Omega_{'+str(n)+'}, (-iH)]'
                 elif(i == n):
                     
-                    #st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
+                    st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
                     S[n,j] = ad(Omega[0], H.clone(), j)
-                    #st+='ad^{'+str(j+1)+'}_{\\Omega_{1}} (-iH) + '
+                    st+='ad^{'+str(j+1)+'}_{\\Omega_{1}} (-iH) + '
                 else:
-                    #st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
+                    st+='+ \\frac{B_{'+str(i)+'}}{{'+str(i)+'}!}'
                     for m in range(1, n-j):
                         S[n, j] += comm(Omega[n-m], S[n-m,j-1])
-                     #   st+='[\\Omega_{'+str(n-m)+'}, S_{'+str(n-m)+'}^{'+str(j)+'}]+'
-                    #st = st.rstrip('+')
+                        st+='[\\Omega_{'+str(n-m)+'}, S_{'+str(n-m)+'}^{'+str(j)+'}]+'
+                    st = st.rstrip('+')
                 Omega[n] +=  Bk[i]/torch.math.factorial(i)*newton(S[n,j], L).cumsum(dim = 0)*dx
-            #disp(Mt(st))
-            #disp(Bk)
+            if(disp):
+                disp(Mt(st))
+                disp(Bk)
+                print('')
                 
     return Omega
 
