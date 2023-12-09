@@ -2,7 +2,7 @@ import torch
 import polars as pl
 from numpy.typing import NDArray
 from .meta import QobjMeta
-from typing import Iterable
+from typing import Any, Iterable
 import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
@@ -23,9 +23,9 @@ class TQobj(Tensor):
                  **kwargs):
         #obj = super(TQobj,cls).__new__(cls, data,*args, dtype = torch.complex64,**kwargs)
         if(isinstance(data, torch.Tensor)):
-            data = torch.tensor(data.detach().numpy(), dtype=torch.complex64)
+            data = torch.tensor(data.detach().numpy(), dtype=torch.complex128)
         else:
-            data = torch.tensor(data, dtype=torch.complex64)
+            data = torch.tensor(data, dtype=torch.complex128)
         obj = super(TQobj, cls).__new__(cls, data, *args, **kwargs)
         return obj
     def __init__(self, 
@@ -201,6 +201,11 @@ class TQobj(Tensor):
             disp('No meta data available')
         return super(TQobj, self).__repr__()
     
+    def __xor__(self, O:object)->object:
+        return direct_prod(self,O)
+    
+    def __rxor__(self, O:object) -> object:
+        return direct_prod(O,self)
 
 
 
@@ -241,3 +246,28 @@ class TQobjEvo(Tensor):
         #if(sparsify):
          #   self.to_sparse_qobj()
         return
+    
+from torch import kron
+
+def direct_prod(*args:tuple[TQobj])->TQobj:
+    A = args[0]
+    if(not isinstance(A, TQobj)):
+        A = A[0]
+        args = args[0]
+        if(not isinstance(A, TQobj)):
+            raise TypeError('Must be TQobj')
+    
+    m = A._metadata.n_particles
+    h = A._metadata.hilbert_space_dims
+    A = A.detach()
+    for i, a in enumerate(args[1:]):
+        if(isinstance(a, TQobj)):
+            try:
+                A = kron(A ,a.detach())
+                m+=a._metadata.n_particles
+            except:
+                ValueError('Must Have Particle Number')
+        else:
+            raise TypeError('Must be TQobj')
+    meta = QobjMeta(n_particles=m, hilbert_space_dims=h, shp=A.shape)
+    return TQobj(A, n_particles=m, hilbert_space_dims=h, meta = meta)

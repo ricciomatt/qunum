@@ -8,6 +8,9 @@ from warnings import warn
 from ..operations.density_operations.common_opers import pT_arr
 import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
+from sympy import kronecker_product as dprod
+
+
 
 class SQobj(Matrix):
     def __init__(self, 
@@ -123,3 +126,18 @@ class SQobj(Matrix):
         except:
             pass
         return self.__str__()
+    
+    def __xor__(self, O:object)->object:
+        return direct_prod(self, O)
+    
+    def __rxor__(self, O:object)->object:
+        return direct_prod(O,self)
+    
+def direct_prod(A:SQobj, B:SQobj):
+    if(not isinstance(A,SQobj) or not isinstance(B,SQobj)):
+        raise TypeError('Must Be SQobj type')
+    if(A._metadata.hilbert_space_dims == B._metadata.hilbert_space_dims):
+        return SQobj(dprod(A,B), n_particles=A._metadata.n_particles+B._metadata.n_particles, 
+                     hilbert_space_dims=A._metadata.hilbert_space_dims)
+    else:
+        raise ValueError('Hilbert Space Dimensions must match')

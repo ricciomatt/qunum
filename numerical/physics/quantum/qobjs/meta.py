@@ -8,23 +8,29 @@ import polars as pl
 import numpy as np
 import warnings
 from IPython.display import display as disp, Markdown as md, Math as mt
-
+import itertools
 class QobjMeta:
     def __init__(self, n_particles:int= None, hilbert_space_dims:int = 2, shp:tuple[int] = None, check_hermitian:bool = False)->None:
         if(len(shp) == 2):
             if(shp[0] == 1):
                 self.obj_tp = 'bra'
+                l = shp[1]
             elif(shp[1] == 1):
                 self.obj_tp = 'ket'
+                l = shp[0]
             else:
                 self.obj_tp = 'operator'
+                l = shp[1]
         elif(len(shp) == 3):
             if(shp[1] == 1):
                 self.obj_tp = 'bra'
+                l = shp[2]
             elif(shp[2] == 1):
                 self.obj_tp = 'ket'
+                l = shp[1]
             else:
                 self.obj_tp = 'operator'
+                l = shp[1]
         else:
             raise IndexError('Only Object of Size 2 and 3')
         if(check_hermitian):
@@ -38,15 +44,15 @@ class QobjMeta:
             self.hilbert_space_dims = hilbert_space_dims
             self.ixs = pl.DataFrame(
                 np.array(
-                    np.meshgrid(
-                        *[np.arange(hilbert_space_dims)]*n_particles)
-                    ).T.reshape(
-                    -1, 
-                    n_particles
-                    )).with_row_count().lazy()
+                    list
+                        (itertools.product(np.arange(self.hilbert_space_dims), 
+                                           repeat=n_particles)
+                         )
+                        )
+                ).with_row_count().lazy()
         elif(hilbert_space_dims == 2):
             self.hilbert_space_dims = hilbert_space_dims
-            self.n_particles = n_particles
+            self.n_particles = int(np.log2(l))
             self.ixs = pl.DataFrame(
                 np.array(
                     np.meshgrid(
