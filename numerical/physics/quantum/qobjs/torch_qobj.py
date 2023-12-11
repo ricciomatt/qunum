@@ -253,7 +253,13 @@ class TQobj(Tensor):
             I_aB[:, i] = rhoa.mutual_info(A,b)
         return I_aB, B
     
-    
+    def cummatprod(self):
+        if(self._metadata.obj_tp != 'operator'):
+            raise TypeError('Must Be operator type')
+        if(len(self.shape) != 3):
+            raise TypeError('Must Be operator type with multiple entries rank(3)')
+        return TQobj(cummatprod_(self.to_tensor()), meta = self._metadata)
+        
     def get_systems(self, A):
         combs = []
         ix = np.arange(self._metadata.n_particles)
@@ -366,3 +372,9 @@ def direct_prod(*args:tuple[TQobj])->TQobj:
             raise TypeError('Must be TQobj')
     meta = QobjMeta(n_particles=m, hilbert_space_dims=h, shp=A.shape)
     return TQobj(A, n_particles=m, hilbert_space_dims=h, meta = meta)
+@torch.jit.script
+def cummatprod_(O:Tensor)->Tensor:
+    A = O[0]
+    for i, a in enumerate(A[1:]):
+        A = A@a
+    return A
