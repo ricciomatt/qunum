@@ -11,7 +11,9 @@ from warnings import warn
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
 import numpy as np 
-
+from torch import kron
+import numba as nb
+from itertools import combinations
 class TQobj(Tensor):
     def __new__(cls, 
                 data,
@@ -20,6 +22,7 @@ class TQobj(Tensor):
                  n_particles:int = 1, 
                  hilbert_space_dims:int =2,
                  sparsify:bool = True,
+                 
                  **kwargs):
         #obj = super(TQobj,cls).__new__(cls, data,*args, dtype = torch.complex64,**kwargs)
         if(isinstance(data, torch.Tensor)):
@@ -137,21 +140,34 @@ class TQobj(Tensor):
         meta = copy.copy(self._metadata)
         meta.n_particles -= 1
         return TQobj(ptrace_ix(ix_, self.clone().detach()), meta = meta)
-
     
-    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None):
+    def expm(self)->object:
+        return TQobj(torch.linalg.matrix_exp(self.data), meta = self._metadata)
+    
+    def to_tensor(self)->Tensor:
+        return torch.tensor(self.data.detach().numpy())
+    
+    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None):
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        if(tr_out is None):
+        if(tr_out is None and keep is None):
             if(len(self.shape) == 3):
                 shp = self.shape[1:]
             else:
                 shp = self.shape
             return torch.tensor(self.data.detach().clone().numpy())[:, torch.arange(shp[0]), torch.arange(shp[1])].sum(dim=1)
         else:
-            ix = np.arange(self._metadata.n_particles)
-            ix = np.delete(ix, tr_out)
-            a = vgc(ix)
+            if(tr_out is not None):
+                ix = np.arange(self._metadata.n_particles)
+                ix = np.delete(ix, tr_out)
+                a = vgc(ix)
+            else:
+                if(isinstance(keep,int) ):
+                    keep = [keep]
+                elif(isinstance(keep, slice)):
+                    ix = np.arange(self._metadata.n_particles)[keep]
+                    keep = ix.copy()
+                a = vgc(keep)
             ix_ =  torch.tensor(
                 self._metadata.ixs.groupby(
                     pl.col(
@@ -185,6 +201,85 @@ class TQobj(Tensor):
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
         return ventropy(torch.tensor(self.data.detach().numpy(), dtype = torch.complex64))
+    
+    def mutual_info(self, A:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable, B:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None = None)->object:
+        if(self._metadata.obj_tp != 'operator'):
+            raise TypeError('Must be an operator')
+        try:
+            iter(A)
+            A = list(A)
+        except:
+            A = [A]
+        if(B is not None):
+            try:
+                iter(B)
+                B = list(B)
+            except:
+                B = [B]
+
+            ix = copy.deepcopy(A)
+            ix.extend(B)
+            rhoAB = self.Tr(keep = ix)
+        else:
+            rhoAB = self
+        rhoA = self.Tr(keep = A)
+        rhoB = self.Tr(keep = B)
+        
+        return rhoA.entropy() + rhoB.entropy() - rhoAB.entropy()
+    
+    def to_density(self):
+        if(self._metadata.obj_tp  == 'operator'):
+            raise TypeError('Must be ket or bra vector')
+        elif(self._metadata.obj_tp == 'ket'):
+            return self @ self.dag()
+        else:
+            return self.dag() @ self
+    
+    def pidMatrix(self, A:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable, Projs:object)->Tensor:
+        if(self._metadata.obj_tp is not 'operator'):
+            raise TypeError('Not implimented for bra and kets')
+        try:
+            iter(A)
+            A = list(A)
+        except:
+            A = [A]
+        rhoa = TQobj(Projs @ self @ Projs.dag())
+        rhoa/= rhoa.Tr()
+        rhoa = TQobj(rhoa)
+        Ha = (rhoa.Tr(keep=A)).entropy()
+        B = self.get_systems(A)
+        I_aB = torch.empty(Ha.shape[0],B.shape[0])
+        for i,b in enumerate(B):
+            I_aB[:, i] = rhoa.mutual_info(A,b)
+        return I_aB, B
+    
+    
+    def get_systems(self, A):
+        combs = []
+        ix = np.arange(self._metadata.n_particles)
+        ix = np.delete(ix, A)
+        for i in range(ix.shape[0]+1):
+            combs.extend(combinations(ix,i))
+        return np.array(combs)
+    
+    def proj(self, qubit:int, dir:object)->object:
+        if(not isinstance(dir, TQobj)):
+            raise TypeError('Must be TQobj')
+        I = TQobj(torch.eye(self._metadata.hilbert_space_dims, self._metadata.hilbert_space_dims), n_particles=1, hilbert_space_dims=self._metadata.hilbert_space_dims)
+        O =  [I for i in range(self._metadata.n_particles)]
+        if(dir._metadata.obj_tp == 'operator'):
+            O[qubit] = dir
+        elif(dir._metadata.obj_tp == 'ket'):
+            O[qubit] = dir @ dir.dag()
+        else:
+            O[qubit] = dir.dig() @ dir      
+        O = direct_prod(*tuple(O)) 
+        if self._metadata.obj_tp == 'operator':
+            return O @ self @ O.dag()
+        elif(self._metadata.obj_tp == 'ket'):
+            return O @ self
+        else:
+            return self @ O.dag()
     
     def __getitem__(self, index):
         item = super(TQobj, self).__getitem__(index)
@@ -247,8 +342,8 @@ class TQobjEvo(Tensor):
          #   self.to_sparse_qobj()
         return
     
-from torch import kron
 
+#@nb.jit(forceobj = True)
 def direct_prod(*args:tuple[TQobj])->TQobj:
     A = args[0]
     if(not isinstance(A, TQobj)):
