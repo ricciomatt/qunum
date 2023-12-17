@@ -25,7 +25,6 @@ class CAMBGenerator:
                  kbins:int = 30,
                  iter_funct:str = '__call__',
                  random_steps:bool = False,
-                  
                 )->None:
         """_summary_
 
@@ -41,7 +40,7 @@ class CAMBGenerator:
             step_on_iter (bool, optional): _description_. Defaults to False.
             random_steps (bool, optional): _description_. Defaults to False.
         """        
-        
+        from camb import CAMBparams, CAMBdata
         self.parms_0 = np.array(parms_0).copy()
         self.set_parms(parms_0, dp_pct)
         

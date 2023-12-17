@@ -6,6 +6,7 @@ from .....lattice_operators.integrators import NewtonCoates, integrate_newton_co
 from scipy.special import bernoulli
 from torch import einsum
 from .....algebra import ad
+from .....physics.quantum import TQobj
 from IPython.display import display as disp, Math as Mt
 
 class Magnus:
@@ -15,7 +16,7 @@ class Magnus:
                  ix0:int = 0, 
                  dt:float = 1e-3,
                  num_int:int = int(5e1),
-                 Int:NewtonCoates= NewtonCoates(2, dtype=torch.complex64),
+                 Int:NewtonCoates= NewtonCoates(2, dtype=torch.complex128),
                  set_iter_len:int=int(1e3),
                  call_funct = 'gen_function'
                  )->None:
@@ -40,7 +41,7 @@ class Magnus:
         self.order = order
         self.Bk = torch.tensor(
             bernoulli(order),
-            dtype=torch.complex64
+            dtype=torch.complex128
         )
         return
     
@@ -58,9 +59,11 @@ class Magnus:
             del H
             return Omega
         elif(U0 is None):
-            U0 = torch.eye(H.shape[1], H.shape[1], dtype= torch.complex64)
+            U0 = torch.eye(H.shape[1], H.shape[1], dtype= torch.complex128)
             del H
-        return torch.linalg.matrix_exp(Omega.sum(dim=0)) @ U0
+            Omega = Omega.sum(dim = 0)
+            Omega = TQobj(Omega)
+            return Omega.expm().cummatprod() @ U0
     
     def __call__(self, 
                  a:float=0., 
@@ -119,7 +122,8 @@ class Magnus:
         comm_ = t-einsum('ABij->BAij', t)
         t = (1/2)*(comm_.cumsum(dim=1)*dx).cumsum(dim=0)*dx
         Omega[1] = torch.swapaxes(torch.swapaxes(t.diagonal(), 2,1), 1,0)
-        print(Omega[1] + 1/2*comm(Omega[0], H))
+    
+        
         return Omega
     
 @torch.jit.script
@@ -130,9 +134,39 @@ def comm(A:torch.Tensor,B:torch.Tensor):
 def tpcomm(A:torch.Tensor,B:torch.Tensor):
     return torch.einsum('Aij, Bjk-> ABik', A, B) - torch.einsum('Aij, Bjk-> ABik', B, A)
 
+
+@torch.jit.script
+def expansion(H:torch.Tensor, 
+              Bk:torch.Tensor, 
+              order:int,
+              dx:float,
+              L:torch.Tensor,)->torch.Tensor:
+    H *= -1j
+    Omega = torch.zeros((order, H.shape[0], H.shape[1], H.shape[1]), dtype = torch.complex64)
+    Omega[0] = newton(H.clone(), L).cumsum(dim=0)*dx
+    Omega[0] = H.clone().cumsum(dim=0)*dx
+    S = torch.zeros((order, order, H.shape[0], H.shape[1], H.shape[1]), dtype = torch.complex64)
+    if(order >= 2):
+        for k in range(2, order+1):
+            n = k-1
+            for i in range(1, k):
+                j = i-1
+                if(i == 1):
+                    t = H.clone()
+                    S[n,j] = comm(Omega[n-1], t)
+                elif(i == n):
+                    S[n,j] = ad(Omega[0], H.clone(), j)
+                else:
+                    for m in range(1, n-j):
+                        S[n, j] += comm(Omega[n-m], S[n-m,j-1])
+                        
+                Omega[n] +=  Bk[i]/torch.math.factorial(i)*newton(S[n,j], L).cumsum(dim = 0)*dx
+            
+                
+    return Omega
     
 #@torch.jit.script
-def expansion(H:torch.Tensor, 
+def expansion_show(H:torch.Tensor, 
               Bk:torch.Tensor, 
               order:int,
               dx:float,

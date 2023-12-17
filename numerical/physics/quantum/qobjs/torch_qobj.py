@@ -13,7 +13,11 @@ from torch import Tensor
 import numpy as np 
 from torch import kron
 import numba as nb
-from itertools import combinations
+from itertools import combinations, product
+from ....algebra.representations import su
+from ....algebra import commutator as comm
+from scipy.linalg import logm
+
 class TQobj(Tensor):
     def __new__(cls, 
                 data,
@@ -22,7 +26,6 @@ class TQobj(Tensor):
                  n_particles:int = 1, 
                  hilbert_space_dims:int =2,
                  sparsify:bool = True,
-                 
                  **kwargs):
         #obj = super(TQobj,cls).__new__(cls, data,*args, dtype = torch.complex64,**kwargs)
         if(isinstance(data, torch.Tensor)):
@@ -31,6 +34,7 @@ class TQobj(Tensor):
             data = torch.tensor(data, dtype=torch.complex128)
         obj = super(TQobj, cls).__new__(cls, data, *args, **kwargs)
         return obj
+    
     def __init__(self, 
                  data,
                  *args,
@@ -143,6 +147,9 @@ class TQobj(Tensor):
     
     def expm(self)->object:
         return TQobj(torch.linalg.matrix_exp(self.data), meta = self._metadata)
+
+    def logm(self)->object:
+        return TQobj(logm(self.detach().numpy()), meta = self._metadata)
     
     def to_tensor(self)->Tensor:
         return torch.tensor(self.data.detach().numpy())
@@ -153,9 +160,10 @@ class TQobj(Tensor):
         if(tr_out is None and keep is None):
             if(len(self.shape) == 3):
                 shp = self.shape[1:]
+                return torch.tensor(self.data.detach().clone().numpy())[:, torch.arange(shp[0]), torch.arange(shp[1])].sum(dim=1)
             else:
                 shp = self.shape
-            return torch.tensor(self.data.detach().clone().numpy())[:, torch.arange(shp[0]), torch.arange(shp[1])].sum(dim=1)
+                return self.trace()
         else:
             if(tr_out is not None):
                 ix = np.arange(self._metadata.n_particles)
@@ -226,6 +234,50 @@ class TQobj(Tensor):
         rhoB = self.Tr(keep = B)
         
         return rhoA.entropy() + rhoB.entropy() - rhoAB.entropy()
+    
+    def pauli_decomposition(self, ret_sig:bool = False, keep_all:bool = False)->tuple[dict|object]|tuple[dict]:
+        if(self._metadata.hilbert_space_dims != 2):
+            raise ValueError('To pauli decompose mus be 2d hilbert spaces ')
+        sig = TQobj(su.get_pauli(to_tensor=True), n_particles=1)
+        ix = product(*(range(4) for i in range(self._metadata.n_particles)))
+        A = {}
+        for i,x in enumerate(ix):
+            t = direct_prod(*(sig[j] for j in x))
+            a = (t @ self).Tr()
+            if(keep_all):
+                A[x] = a
+            elif not (torch.all(a.real == 0) and torch.all(a.imag == 0)):
+                A[x] = a
+        R = [A]
+        if(ret_sig):
+            R.append(sig)
+        return tuple(R)
+    
+    def block_decimate(self)->dict[dict[str:Tensor]]:
+        P, sig = self.pauli_decomposition(ret_sig = True, keep_all= False)
+        Blocks = {}
+        keys = list(P.keys())
+        k = 0
+        while len(P) != 0:
+            p0 = keys[0]
+            A = {p0: P[p0]}
+            t = direct_prod(*(sig[n] for n in p0))
+            j = k+1
+            while j<len(keys):
+                p1 = keys[j]
+                b = direct_prod(*(sig[n] for n in p1))
+                c = comm(t,b)
+                if torch.all(c.real == 0) and torch.all(c.imag == 0):
+                    A[p1] = P[p1]
+                    del P[p1]
+                    del keys[j]
+                else:
+                    j+=1
+            del P[p0]
+            del keys[0]
+            Blocks[k] = A
+            k+=1
+        return Blocks
     
     def to_density(self):
         if(self._metadata.obj_tp  == 'operator'):
@@ -372,9 +424,9 @@ def direct_prod(*args:tuple[TQobj])->TQobj:
             raise TypeError('Must be TQobj')
     meta = QobjMeta(n_particles=m, hilbert_space_dims=h, shp=A.shape)
     return TQobj(A, n_particles=m, hilbert_space_dims=h, meta = meta)
+
 @torch.jit.script
-def cummatprod_(O:Tensor)->Tensor:
-    A = O[0]
-    for i, a in enumerate(A[1:]):
-        A = A@a
-    return A
+def cummatprod_(O: Tensor) -> Tensor:
+    for i in range(1, O.size(0)):
+        O[i] = O[i] @ O[i-1]
+    return O
