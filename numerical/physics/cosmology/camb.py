@@ -249,13 +249,12 @@ def get_Pk(pars:CAMBparams,
     """    
     pars.set_cosmology(
                     H0=tp[0], 
-                    ombh2=tp[3], 
-                    omch2=tp[4], 
+                    ombh2=tp[2], 
+                    omch2=tp[3], 
                     mnu=0, 
                     omk=0, 
                     tau=0.0)
     pars.InitPower.set_params(ns=tp[1], 
-                          As=tp[2], 
                           r=0)
     return camb.get_matter_power_interpolator(pars, 
                                         nonlinear=True, 
