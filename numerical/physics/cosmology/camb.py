@@ -40,7 +40,7 @@ class CAMBGenerator:
             step_on_iter (bool, optional): _description_. Defaults to False.
             random_steps (bool, optional): _description_. Defaults to False.
         """        
-        from camb import CAMBparams, CAMBdata
+        
         self.parms_0 = np.array(parms_0).copy()
         self.set_parms(parms_0, dp_pct)
         
@@ -249,12 +249,13 @@ def get_Pk(pars:CAMBparams,
     """    
     pars.set_cosmology(
                     H0=tp[0], 
-                    ombh2=tp[2], 
-                    omch2=tp[3], 
+                    ombh2=tp[3], 
+                    omch2=tp[4], 
                     mnu=0, 
                     omk=0, 
                     tau=0.0)
     pars.InitPower.set_params(ns=tp[1], 
+                          As=tp[2], 
                           r=0)
     return camb.get_matter_power_interpolator(pars, 
                                         nonlinear=True, 
