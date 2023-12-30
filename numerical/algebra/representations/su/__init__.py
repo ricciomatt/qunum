@@ -3,14 +3,14 @@ from torch import tensor, complex64, ComplexType
 from torch.types import _TensorOrTensors
 from numpy.typing import NDArray
 
-def get_pauli(to_tensor:bool= False, include_identity:bool=True)->NDArray[np.complex64]|ComplexType:
+def get_pauli(to_tensor:bool= False, include_identity:bool=True, dtype = np.complex128)->NDArray[np.complex64]|ComplexType:
     if(include_identity):
-        sigma = np.zeros((4,2,2), dtype = np.complex64)
+        sigma = np.zeros((4,2,2), dtype = dtype)
         sigma[0,0,0] = complex(1,0)
         sigma[0,1,1] = complex(1,0)
         ix = 3
     else:
-        sigma = np.zeros((3,2,2), dtype=np.complex64)
+        sigma = np.zeros((3,2,2), dtype=dtype)
         ix = 2
     sigma[ix,0,0] = complex(1,0)
     sigma[ix,1,1] = complex(-1,0)

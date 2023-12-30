@@ -3,24 +3,23 @@ import torch
 from sympy import Matrix, latex, I
 from torch import einsum, Tensor
 import numba as nb
-from qutip import tensor, basis, Qobj
 import numpy as np
-from ......constants import c as c
-from ......seml.fitting_algos.numerical_solvers.magnus import Magnus
-from ......algebra.representations.su import get_pauli
-from .....data.hamiltonian import LazyTimeHamiltonian
+from .......constants import c as c
+from .......seml.fitting_algos.numerical_solvers.magnus import Magnus
+from .......algebra.representations.su import get_pauli
+from ......data.hamiltonian import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch.distributions import Gamma, Normal
-from ....qobjs import TQobj
-from ....operators.dir_prod import direct_prod
+from .....qobjs.torch_qobj import TQobj, direct_prod
 from typing import Callable
+from ....nuetrino import pmns2
 @torch.jit.script
 def mu(t:torch.Tensor, mu0:float, Rv:float, r_0:float)->torch.Tensor:
     return mu0*( 1 - torch.sqrt(1 - ((Rv/(r_0 + t))**(2)) ) )**(2)
        
 @torch.jit.script
-def hamiltonian_operator(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor, r:float, Rv:float, v:float, )->torch.Tensor:
-    u = torch.pow(1-torch.sqrt(1-torch.pow(Rv/(r+v*t),2)),2)
+def hamiltonian_operator(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor, r:float, Rv:float, v:float, mu0:float )->torch.Tensor:
+    u = mu0*torch.pow(1-torch.sqrt(1-torch.pow(Rv/(r+v*t),2)),2)
     a = torch.ones(u.shape[0], dtype = torch.complex64)
     return (einsum('n, ij->nij', a.to(H_0.device), H_0) + einsum('n,ij->nij',(u), H_1))
 
@@ -30,71 +29,6 @@ def hamiltonian_operator_exp(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor,
     a = torch.ones(u.shape[0], dtype = torch.complex64)
     return (einsum('n, ij->nij', a.to(H_0.device), H_0) + einsum('n,ij->nij',(u), H_1))
 
-class MeanField:
-    def __init__(self, 
-                n_particles:int=2,
-                flavors:int = 2,
-                omega:torch.Tensor|None = None,
-                omega_0:float|None = 1.,
-                mu0:float|torch.Tensor = 5.,
-                Rv:float|torch.Tensor = 50e6,
-                r_0:float = 50e6,
-                v:float = c,
-                device:int|str = '0',
-                operator:Callable= hamiltonian_operator,
-                ):
-        
-        J = get_J(n_particles, get_pauli(n_particles))
-        if(omega is not None):
-            self.w = omega
-            try:
-                self.w0 = omega.real.min()
-            except:
-                self.w0 = omega[0]
-        else:
-            self.w = torch.arange(1, n_particles+1)*omega_0
-            self.w = torch.complex(self.w, torch.zeros_like(self.w))
-            self.w0 = omega_0
-        
-        self.w.type(torch.complex64)
-        self.H0 = H0(self.w, J)
-        self.H1 = H1(J)
-        self.mu0 = float(mu0)
-        self.v = float(v)
-        self.r = float(r_0)
-        self.Rv = float(Rv)
-        self.N = float(n_particles)
-        self.flavors = flavors
-        self.device = device
-        self.H1 *= self.mu0/self.N 
-        self.O = operator
-        try:
-            self.H0.to(device)
-            self.H1.to(device)
-            self.N.to(device)
-            self.v.to(device)
-            self.r.to(device)
-            self.Rv.to(device)
-        except:
-            pass
-        return  
-    
-    def __call__(self, t:torch.Tensor) -> torch.Tensor:
-        return self.O(self.H0, self.H1, t, self.r, self.Rv, self.v)
-    
-    def to(self, device:str|int):
-        self.device = device
-        self.w.to(device)
-        self.H0.to(device)
-        self.H1.to(device)
-        return 
-        
-    
-    def __repr__(self):
-        disp(md(f'''$$\\omega_i = {latex(Matrix(self.w.detach().real.numpy()).T)}\\\\v={str(self.v)}, R_\\nu={str('{:.2e}'.format(self.Rv))}, r_0 = {str('{:.2e}'.format(self.Rv))}, \\mu_0 = {str(self.mu0)}$$'''))
-        disp(md(f'''$$\\mathcal{'{H}'}_{'{0}'} = {latex(Matrix(self.H0.real.detach().numpy())+ I *Matrix(self.H0.imag.detach().numpy()))}$$'''))
-        disp(md(f'''$$\\mathcal{'{H}'}_{'{1}'} = {latex(Matrix(self.H1.real.detach().numpy())+ I *Matrix(self.H1.imag.detach().numpy()))}$$'''))
-        return f'{str(int(self.N))} Particle {str(int(self.flavors))} Flavor, Mean Field Neutrino Hamiltonian. '
  
 @torch.jit.script
 def get_J(n:int, sigma:torch.Tensor)->torch.Tensor:
@@ -113,13 +47,88 @@ def get_J(n:int, sigma:torch.Tensor)->torch.Tensor:
             J[j,i] = temp
     return J/2
 
+
+class MeanField:
+    def __init__(self, 
+                n_particles:int=2,
+                flavors:int = 2,
+                omega:torch.Tensor|None = None,
+                omega_0:float|None = 1.,
+                mu0:float|torch.Tensor = 5.,
+                Rv:float|torch.Tensor = 50e6,
+                r_0:float = 50e6,
+                v:float = c,
+                device:int|str = '0',
+                operator:Callable= hamiltonian_operator,
+                ):
+        
+        self.N = float(n_particles)
+        self.mu0 = float(mu0)
+        self.v = float(v)
+        self.r = float(r_0)
+        self.Rv = float(Rv)
+        J = self.getJ()
+        if(omega is not None):
+            self.w = omega
+            try:
+                self.w0 = omega.real.min()
+            except:
+                self.w0 = omega[0]
+        else:
+            self.w = torch.arange(1, n_particles+1)*omega_0
+            self.w = torch.complex(self.w, torch.zeros_like(self.w))
+            self.w0 = omega_0
+        self.w.type(J.dtype)
+        self.H0 = H0(self.w, J)
+        self.H1 = H1(J)
+        
+        self.flavors = flavors
+        self.device = device
+        self.H1/=self.N 
+        self.O = operator
+        try:
+            self.H0.to(device)
+            self.H1.to(device)
+            self.N.to(device)
+            self.v.to(device)
+            self.r.to(device)
+            self.Rv.to(device)
+        except:
+            pass
+        return  
+    
+    def __call__(self, t:torch.Tensor) -> torch.Tensor:
+        return self.O(self.H0, self.H1, t, self.r, self.Rv, self.v, self.mu0)
+    
+    def to(self, device:str|int):
+        self.device = device
+        self.w.to(device)
+        self.H0.to(device)
+        self.H1.to(device)
+        return 
+    
+    def getJ(self)->Tensor:
+        J = get_J(int(self.N), get_pauli(to_tensor= True))
+        return J
+    
+    def getHBasis(self)->TQobj:
+        return {TQobj(self.H0/self.H0.norm(), hilbert_space_dims=self.flavors, n_particles=int(self.N)), 
+                TQobj(self.H1/self.H1.norm(), hilbert_space_dims=self.flavors, n_particles=int(self.N))}
+         
+    
+    def __repr__(self):
+        disp(md(f'''$$\\omega_i = {latex(Matrix(self.w.detach().real.numpy()).T)}\\\\v={str(self.v)}, R_\\nu={str('{:.2e}'.format(self.Rv))}, r_0 = {str('{:.2e}'.format(self.Rv))}, \\mu_0 = {str(self.mu0)}$$'''))
+        disp(md(f'''$$\\mathcal{'{H}'}_{'{0}'} = {latex(Matrix(self.H0.real.detach().numpy())+ I *Matrix(self.H0.imag.detach().numpy()))}$$'''))
+        disp(md(f'''$$\\mathcal{'{H}'}_{'{1}'} = {latex(Matrix(self.H1.real.detach().numpy())+ I *Matrix(self.H1.imag.detach().numpy()))}$$'''))
+        return f'{str(int(self.N))} Particle {str(int(self.flavors))} Flavor, Mean Field Neutrino Hamiltonian. '
+
+
 def init_psi(n:int, theta:float = np.pi/5)->TQobj:
-    b = TQobj(torch.tensor([[1,0]], dtype=torch.complex64), n_particles=1, hilbert_space_dims=2)
-    Uh = TQobj(torch.tensor([[np.cos(theta), np.sin(theta)],[-np.sin(theta), np.cos(theta)]]), n_particles=1, hilbert_space_dims=2)
+    b = TQobj(torch.tensor([[1.,0.]], dtype= torch.complex128), n_particles=1, hilbert_space_dims=2)
+    Uh = pmns2(theta=torch.tensor(theta))#TQobj(torch.tensor([[np.cos(theta), np.sin(theta)],[-np.sin(theta), np.cos(theta)]], dtype=torch.complex128), n_particles=1, hilbert_space_dims=2)
     args = (Uh @ b.dag() for i in range(n))
     args2 =  (Uh  for i in range(n))
     return direct_prod(*args), direct_prod(tuple(args2))
-    
 
 @torch.jit.script
 def H0(omega:torch.Tensor, J:torch.Tensor)->torch.Tensor:
@@ -133,12 +142,6 @@ def H1(J:torch.Tensor)->torch.Tensor:
             if(p!=q):
                 H_1 += einsum('mij, mjk-> ik', J[p], J[q])
     return H_1
-
-@torch.jit.script
-def H11(J:torch.Tensor)->torch.Tensor:
-    H_1 = torch.zeros((J.shape[2:]), dtype = J.dtype)
-    J = J.sum(dim = 0)
-    return einsum('mij, mjk->ik',J,J)
 
 
 

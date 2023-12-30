@@ -16,7 +16,7 @@ def tensor_commutator(A:torch.Tensor, B:torch.Tensor)->torch.Tensor:
 
 @torch.jit.script
 def ad(A:torch.Tensor, B:torch.Tensor, k:int = 1)->torch.Tensor:
-    for i in range(k):
+    for i in range(k+1):
         t = B.clone()
         B = tensor_commutator(A,t)
     return B

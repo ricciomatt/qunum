@@ -14,29 +14,16 @@ class QobjMeta:
                  hilbert_space_dims:int = 2, 
                  shp:tuple[int] = None, 
                  check_hermitian:bool = False,)->None:
-        if(len(shp) == 2):
-            if(shp[0] == 1):
-                self.obj_tp = 'bra'
-                l = shp[1]
-            elif(shp[1] == 1):
-                self.obj_tp = 'ket'
-                l = shp[0]
-            else:
-                self.obj_tp = 'operator'
-                l = shp[1]
-        elif(len(shp) == 3):
-            if(shp[1] == 1):
-                self.obj_tp = 'bra'
-                l = shp[2]
-            elif(shp[2] == 1):
-                self.obj_tp = 'ket'
-                l = shp[1]
-            else:
-                self.obj_tp = 'operator'
-                l = shp[1]
+        if(shp[-1] == shp[-2]):
+            self.obj_tp = 'operator'
+            l = shp[-1]
+        elif(shp[-2] == 1):
+            self.obj_tp = 'bra'
+            l = shp[-1]
         else:
-            raise IndexError('Only Object of Size 2 and 3, if more than that specify hilbert axis')
-            
+            self.obj_tp = 'ket'
+            l = shp[-2]
+        
         if(check_hermitian):
             self.check_hermitian = check_hermitian
             self.herm = False
