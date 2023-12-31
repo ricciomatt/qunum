@@ -35,8 +35,8 @@ def hamiltonian_operator_exp(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor,
         )
  
 @torch.jit.script
-def get_J(n:int, sigma:torch.Tensor)->torch.Tensor:
-    J = torch.empty((n, 3, int(sigma.shape[1]**n), int(sigma.shape[1]**n)), dtype = torch.complex64)
+def get_J(n:int, sigma:torch.Tensor, dtype:torch.dtype = torch.complex128)->torch.Tensor:
+    J = torch.empty((n, 3, int(sigma.shape[1]**n), int(sigma.shape[1]**n)), dtype = dtype)
     for i in range(3):
         for j in range(n):
             if(j == 0):

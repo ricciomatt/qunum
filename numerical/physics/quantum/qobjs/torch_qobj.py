@@ -393,6 +393,10 @@ class TQobj(Tensor):
             pass
         return item
     
+    def sum(self, **kwargs):
+        M = super(TQobj, self).sum(**kwargs)
+        M.set_meta(self._metadata)
+        return M
     
 class TQobjEvo(Tensor):
     def __new__(cls, 

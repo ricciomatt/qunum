@@ -50,14 +50,15 @@ class Magnus:
                  b:float=1.,
                  num_pts:int = int(1e2),
                  U0:None|torch.Tensor = None,
-                 raw_omega:bool = False,)->torch.Tensor:
+                 raw_omega:bool = False)->torch.Tensor:
         dx = (b-a)/num_pts
         x = torch.linspace(a, b, num_pts)
         H = self.H(x)
         Omega = expansion(H, self.Bk, self.order, dx, self.Int.L)
         if(raw_omega):
-            #del H
-            return Omega, H, x
+            del H
+            return Omega
+            
         elif(U0 is None):
             U0 = torch.eye(H.shape[1], H.shape[1], dtype= H.dtype)
             del H
@@ -196,10 +197,4 @@ def expansion_show(H:torch.Tensor,
 
 
 
-
-def calc_Snj(Omega:torch.Tensor, n:int, j:int)->torch.Tensor:
-    torch.zeros(n,n-1, Omega.shape[1], Omega.shape[2])
-    pass
-
-    
     

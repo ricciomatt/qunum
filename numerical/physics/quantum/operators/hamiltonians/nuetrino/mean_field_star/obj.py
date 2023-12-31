@@ -19,6 +19,7 @@ class MeanField:
                 v:float = c,
                 device:int|str = '0',
                 operator:Callable= hamiltonian_operator,
+                dtype:torch.dtype = torch.complex128
                 ):
         
         self.N = float(n_particles)
@@ -26,7 +27,7 @@ class MeanField:
         self.v = float(v)
         self.r0= float(r_0)
         self.Rv = float(Rv)
-        J = self.getJ()
+        J = self.getJ(dtype)
         if(omega is not None):
             self.w = omega
             try:
@@ -37,7 +38,9 @@ class MeanField:
             self.w = torch.arange(1, n_particles+1)*omega_0
             self.w = torch.complex(self.w, torch.zeros_like(self.w))
             self.w0 = omega_0
-        self.w.type(J.dtype)
+            
+        self.w = self.w.type(J.dtype)
+        print(J.dtype, self.w.dtype)
         self.H0 = H0(self.w, J)
         self.H1 = H1(J)
         
@@ -66,8 +69,8 @@ class MeanField:
         self.H1.to(device)
         return 
     
-    def getJ(self)->Tensor:
-        J = get_J(int(self.N), get_pauli(to_tensor= True))
+    def getJ(self, dtype)->Tensor:
+        J = get_J(int(self.N), get_pauli(to_tensor= True), dtype=dtype)
         return J
     
     def getHBasis(self)->TQobj:
