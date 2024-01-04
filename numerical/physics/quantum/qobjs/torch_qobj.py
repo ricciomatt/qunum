@@ -334,7 +334,7 @@ class TQobj(Tensor):
             return self.dag() @ self
     
     def pidMatrix(self, A:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable, Projs:object)->Tensor:
-        if(self._metadata.obj_tp is not 'operator'):
+        if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Not implimented for bra and kets')
         try:
             iter(A)
