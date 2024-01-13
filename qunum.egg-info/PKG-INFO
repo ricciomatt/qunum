@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: qunum
+Version: 1.0
+Summary: This is the physik package for PINN's, Quantum Numerics and Quantum Symbolic Calculations.
+Author: Matthew Riccio
+Author-email: riccio_matt@outlook.com
+License-File: LICENSE

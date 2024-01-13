@@ -1,0 +1,1 @@
+from .power_specturm.camb_generator import CAMBGenerator as PowerSpectrumCambGenerator

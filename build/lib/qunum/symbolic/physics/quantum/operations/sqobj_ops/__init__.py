@@ -1,0 +1,1 @@
+from .d_prod_ops import direct_prod

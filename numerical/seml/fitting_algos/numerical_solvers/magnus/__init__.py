@@ -1,1 +1,0 @@
-from .magnus_gen import Magnus
