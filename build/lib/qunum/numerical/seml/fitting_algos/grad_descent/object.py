@@ -3,9 +3,10 @@ from torch import Tensor
 from ...data import DataLoader, LazyLattice
 from ...metrics.numerical import ModelTracker
 from tqdm import tqdm
-from typing import Callable
+from typing import Callable, Any
 from ...metrics.numerical import mean_accuracy
 import numpy as np
+
 from copy import deepcopy
 class PhysicsDataGenerator:
     def __init__(self) -> None:
@@ -16,7 +17,6 @@ class GradDescentTrain:
     def __init__(self, 
                  Model:torch.nn.Module,
                  Loss:Callable|tuple[Callable],
-                 dataLoader:DataLoader|LazyLattice|PhysicsDataGenerator,
                  Optimizers:torch.optim.Optimizer|tuple[torch.optim.Optimizer],
                  epochs:int = int(1e1), 
                  batch_steps:int= 1,
@@ -25,6 +25,7 @@ class GradDescentTrain:
                  prnt_:bool=False,
                  prntFreq:int = 100,
                  modelTracker:ModelTracker|None=None,
+                 dataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None,
                  dataLoaderValid:DataLoader|LazyLattice|PhysicsDataGenerator|None = None,
                  validationUpdate:Callable|None = None)->None:
         #Model and Loss stuff
@@ -71,13 +72,21 @@ class GradDescentTrain:
         self.n = 0
         return
     
-    def copyModel(self):
+    def copyModel(self)->torch.nn.Module:
         return deepcopy(self.Model)
     
     def __iter__(self):
         return self
     
-    def __next__(self):
+    def set_dataLoader(self, TrainDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None)->None:
+        if(TrainDataLoader is None and self.dataLoader is None):
+            raise ValueError('Setting None to None')
+        self.dataLoader = TrainDataLoader
+        return 
+
+    def __next__(self)->None:
+        if(self.dataLoader is None):
+            raise ValueError('To iterate provide a data loader with: GD.set_dataLoader(TrainDataLoader)')
         if(self.n<self.epochs):
             self.n += 1
             self.tot_epochs += 1
@@ -114,13 +123,35 @@ class GradDescentTrain:
             for i in range(self.batch_steps):
                 self.step_function(x,y)
         return
-    
-    def train_model(self)->None:
+    def train(self, *args, TrainDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None, 
+              ValidationDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None, 
+              dropdataLoader:bool= False, 
+              **kwargs:dict[Any])->None:
+        self.Model.to(self.device)
+        if(self.dataLoader is None):
+            try:
+                self.set_dataLoader(TrainDataLoader)
+            except:
+                if(args == ()):
+                    raise ValueError('To train provide a data loader with: GD.set_dataLoader(TrainDataLoader)')
+                else:
+                    self.set_dataLoader(args[0])
+        if(ValidationDataLoader is not None):
+            self.dataLodaerValid = ValidationDataLoader
+        elif(len(args)>1):
+            self.dataLodaerValid = args[1]
         for i in tqdm(range(self.epochs)):
             next(self)
         self.reset_iterator()
+        if(dropdataLoader):
+            self.dataLoader = None
+            self.dataLodaerValid = None 
+        self.Model.to('cpu')
         return
     
+    def __call__(self, **kwargs:dict[Any])->None:
+        return self.train(**kwargs)
+
     #Loss Stuff
     def eval_loss(self, x:Tensor, y:Tensor)->Tensor:
         yh = self.Model.forward(x,y)

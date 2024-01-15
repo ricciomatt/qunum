@@ -1,7 +1,7 @@
 import torch
 from typing import Callable, Iterator
 import copy
-class Pipeline:
+class ModelPipeline:
     def __init__(self, 
                  Models:tuple[Callable],
                  training:dict[bool] = None):

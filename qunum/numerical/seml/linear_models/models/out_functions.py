@@ -15,10 +15,11 @@ def getMap(use_numpy:bool = False)->dict[str:Callable|object]:
         'sqrt':Sqrt,
         'pow':Pow,
         'to_pow':ToPow,
+        'soft_max':SoftMax,
     } 
 
 class Id:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -26,8 +27,20 @@ class Id:
     def inv(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
         return x
 
+class SoftMax:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
+        self.use_numpy = use_numpy
+        return
+    def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
+        if(self.use_numpy):
+            return np.exp(x)/(np.exp(x).sum(axis=1))
+        else:
+            return torch.softmax(x, dim=1)
+    def inv(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
+        raise TypeError('SoftMax Not Supported for this Parameter Estimator')
+    
 class Sigmoid:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -42,7 +55,7 @@ class Sigmoid:
             return 1/(1+torch.exp(x))
 
 class Tanh:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -57,7 +70,7 @@ class Tanh:
             return torch.arctanh(x)
 
 class PrbTanh:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -73,7 +86,7 @@ class PrbTanh:
 
 
 class Exp:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -88,7 +101,7 @@ class Exp:
             return torch.log(x)
 
 class Cosh:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self,*args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -104,7 +117,7 @@ class Cosh:
 
 
 class Sinh:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -120,7 +133,7 @@ class Sinh:
 
 
 class Cos:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -136,7 +149,7 @@ class Cos:
 
 
 class Sin:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self, *args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -151,7 +164,7 @@ class Sin:
             return torch.arcsin(x)
 
 class Sqrt:
-    def __init__(self, use_numpy:bool=False, **kwargs)->None:
+    def __init__(self,*args, use_numpy:bool=False, **kwargs)->None:
         self.use_numpy = use_numpy
         return
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -163,8 +176,8 @@ class Sqrt:
         return x**2
 
 class Pow:
-    def __init__(self,*args, use_numpy:bool=False, **kwargs):
-        self.power = kwargs['power']
+    def __init__(self,*args, use_numpy:bool=False, power:float|int=2, **kwargs):
+        self.power = power
         self.use_numpy = use_numpy
         return 
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
@@ -173,8 +186,8 @@ class Pow:
         return x**(1/self.power)
 
 class ToPow:
-    def __init__(self,*args, use_numpy:bool=False, **kwargs):
-        self.base = kwargs['base']
+    def __init__(self,*args, use_numpy:bool=False, base:float|int=2, **kwargs):
+        self.base = base
         self.use_numpy = use_numpy
         return 
     def __call__(self, x:torch.Tensor|np.ndarray)->torch.Tensor|np.ndarray:
