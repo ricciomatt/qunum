@@ -12,8 +12,7 @@ import torch
 
 sigma_matricies = TQobj(su.get_pauli(to_tensor = True), n_particles = 1)
 # Declaring a new ket state randomly evaluated at 1000 points
-
-Psi = TQobj(torch.rand((1000, 8, 1)), n_particles = 3, hilbert_space_dims = 2)
+Psi = TQobj(torch.rand((1000, 8, 1), dtype = torch.complex128), n_particles = 3, hilbert_space_dims = 2)
 Psi /= torch.sqrt((Psi.dag() @ Psi))
 
 # making a density matrix
@@ -23,11 +22,12 @@ rho = Psi.to_density() # Psi @ Psi.dag()
 Rz = (sigma_matricies[3]*torch.pi/4).expm()
 
 I = TQobj(torch.eye(2,2), dtype = rho.dtype)
-Full_Operator = O^I^I
+Full_Operator = Rz^I^I
 
-rho = Full_Operator @ rho @ Full_Opertor.dag()
+rho = Full_Operator @ rho @ Full_Operator.dag()
 
-S0 = rho.entropy(0)
+S0 = rho.Tr(0).entropy()
 I01 = rho.mutual_info(0,1)
+
 
 ```
