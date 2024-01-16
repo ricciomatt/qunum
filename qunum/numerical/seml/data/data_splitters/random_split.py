@@ -21,8 +21,8 @@ class RandomSplit:
                 self.ixs = np.arange(0, min(df.shape[0], self.mx_num))
         ltrn = int(np.ceil(self.trn_pct*self.ixs.shape[0]))
         ltst = int(np.ceil(self.test_pct*self.ixs.shape[0]))
-        trn = ldf.filter(pl.col('row_nr').is_in(self.ixs[:ltrn])).collect()
-        tst = ldf.filter(pl.col('row_nr').is_in(self.ixs[ltrn:ltrn+ltst])).collect()
-        vld = ldf.filter(pl.col('row_nr').is_in(self.ixs[ltrn+ltst:])).collect()
+        trn = ldf.filter(pl.col('row_nr').is_in(self.ixs[:ltrn])).collect().drop('row_nr')
+        tst = ldf.filter(pl.col('row_nr').is_in(self.ixs[ltrn:ltrn+ltst])).collect().drop('row_nr')
+        vld = ldf.filter(pl.col('row_nr').is_in(self.ixs[ltrn+ltst:])).collect().drop('row_nr')
         return trn, tst, vld
 

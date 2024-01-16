@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 import warnings
 import numpy as np
 import torch
-from ..operators.density_operations import ptrace_torch_ix as ptrace_ix, vgc
+from .density_operations import ptrace_torch_ix as ptrace_ix, vgc
 import polars as pl 
 import numpy as np
 import warnings
@@ -33,19 +33,23 @@ class QobjMeta:
         if(hilbert_space_dims**n_particles == l):
             self.n_particles = n_particles
             self.hilbert_space_dims = hilbert_space_dims
-            
-        elif(hilbert_space_dims == 2):
-            self.hilbert_space_dims = hilbert_space_dims
-            self.n_particles = int(np.log2(l))
-           
-            warnings.warn('Assuming that this is a 2d hilbert space')
         else:
-            raise RuntimeError('Operators must have dimensions specified')
+            if(hilbert_space_dims == 2): warnings.warn('Assuming that this is a 2d hilbert space')
+            self.hilbert_space_dims = hilbert_space_dims
+            n = np.log(l)/np.log(self.hilbert_space_dims)
+            if(n == int(n)): 
+                raise RuntimeError('Dimension of Object must be integer log_{hilbert_space_dims}(n_particles) must be an integer value')
+            else: 
+                self.n_particles = int(n)
+            
         self.ixs = pl.DataFrame(
                 np.array(
-                    list
-                        (itertools.product(np.arange(self.hilbert_space_dims), 
-                                           repeat=n_particles)
+                    list(
+                        itertools.product(
+                            range(
+                                self.hilbert_space_dims
+                            ), 
+                            repeat=n_particles)
                          )
                         )
                 ).with_row_count().lazy()
@@ -54,7 +58,7 @@ class QobjMeta:
         return self.__str__()
     
     def __str__(self):
-        return '$$n_{particles}= '+str(self.n_particles)+'\\\\'+' n_{hilbert\\;dims}= '+str(self.hilbert_space_dims)+'\\\\type='+str(self.obj_tp)+'$$'
+        return f'$$n_{{particles}}= {str(self.n_particles)}\nn_{{hilbert\\;dims}}={str(self.hilbert_space_dims)}\ntype={str(self.obj_tp)}$$'
         
 
 

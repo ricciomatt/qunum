@@ -55,17 +55,12 @@ class GradDescentTrain:
         #booleans 
         self.prnt_ = prnt_ 
         self.prntFreq = prntFreq       
-        self.opt_iter = is_iterable(self.Optimizers)
         self.track = bool(modelTracker is None)
         self.validate = bool(dataLoaderValid is not None)
-        if(self.opt_iter):
-            self.O = len(Optimizers)
-            step_opt = 'stepopt'
-        else:
-            self.O = 1
-            step_opt = 'stepnormal'
-       
-        self.step_function = getattr(self, step_opt)
+        
+        if(is_iterable(Optimizers)): self.Optimizers = Optimizers
+        else: self.Optimizers = (Optimizers,)
+        
         return 
     
     def reset_iterator(self):
@@ -90,7 +85,7 @@ class GradDescentTrain:
         if(self.n<self.epochs):
             self.n += 1
             self.tot_epochs += 1
-            for i in range(self.O):
+            for i in range(len(self.Optimizers)):
                 self.do_epoch()
                 self.o+=1
             self.o = 0
@@ -122,6 +117,8 @@ class GradDescentTrain:
             y = y.to(self.device)
             for i in range(self.batch_steps):
                 self.step_function(x,y)
+            x.cpu(); y.cpu()
+            del x; del y
         return
     def train(self, *args, TrainDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None, 
               ValidationDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None, 
@@ -154,24 +151,21 @@ class GradDescentTrain:
 
     #Loss Stuff
     def eval_loss(self, x:Tensor, y:Tensor)->Tensor:
-        yh = self.Model.forward(x,y)
+        yh = self.Model.forward(x)
         L = self.Loss(yh, y, x)
         if(self.track):
-            self.modelTracker(y,yh,L)
+            self.modelTracker(y,  yh, L)
         return L
     
     def closure(self, x:Tensor, y:Tensor)->Tensor:
         self.Optimizers.zero_grad()
         return self.eval_loss(x, y)
     
-    #Optimization
-    def stepnormal(self,x:Tensor,y:Tensor)->None:
-        self.Optimizers.step(lambda: self.closure(x,y))
-        return 
-    
-    def stepopt(self, x:Tensor, y:Tensor):
-        return self.Optimizers[self.o].step(lambda: self.closure(x,y))
-    
+    #Steps the Parameters for a given optimizer
+    def step_function(self,x,y):
+        self.Optimizers[self.o].step(lambda: self.closure(x,y))
+        return
+
     
 def is_iterable(obj):
     try:

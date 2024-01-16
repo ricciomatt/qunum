@@ -3,7 +3,7 @@ import torch
 from numpy.typing import NDArray
 from typing import Callable, Any
 from torch import Tensor
-from .out_functions import *
+from ..models.out_functions import *
 from sklearn.linear_model import Lasso
 
 @torch.jit.script

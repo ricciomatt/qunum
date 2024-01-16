@@ -6,7 +6,7 @@ from typing import Any, Iterable
 import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
-from ..operators.density_operations import ptrace_torch_ix as ptrace_ix, vgc, pT_arr, ventropy
+from .density_operations import ptrace_torch_ix as ptrace_ix, vgc, nb_get_cols, pT_arr, ventropy
 from warnings import warn
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
@@ -135,12 +135,14 @@ class TQobj(Tensor):
     def __rmul__(self, O:object|Tensor)->object:
         return self.__mul__(O)
     
-    def __repr__(self):
+    def __repr__(self)->str:
         try:
-            disp(md(self._metadata.__str__()))
+            str_ = self._metadata.__str__()
         except:
-            disp('No meta data available')
-        return super(TQobj, self).__repr__()
+            str_ = 'No meta data available'
+        return str_+'\n'+super(TQobj, self).__repr__()
+    def __str__(self)->str:
+        return self.__repr__()
     
     def __xor__(self, O:object)->object:
         return direct_prod(self,O)
@@ -230,7 +232,7 @@ class TQobj(Tensor):
     def pT(self, ix_T:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        a = vgc(ix_T)
+        a = vgc(np.array(ix_T, dtype = np.int64))
         ix_ =  torch.tensor(
             self._metadata.ixs.groupby(
                 pl.col(
@@ -450,7 +452,7 @@ class TQobjEvo(Tensor):
         return
     
 
-#@nb.jit(forceobj = True)
+#@nb.jit(nopython=False, forceobj=True)
 def direct_prod(*args:tuple[TQobj])->TQobj:
     A = args[0]
     if(not isinstance(A, TQobj)):
@@ -461,11 +463,11 @@ def direct_prod(*args:tuple[TQobj])->TQobj:
     
     m = A._metadata.n_particles
     h = A._metadata.hilbert_space_dims
-    A = A.detach()
+    A = A
     for i, a in enumerate(args[1:]):
         if(isinstance(a, TQobj)):
             try:
-                A = kron(A ,a.detach())
+                A = kron(A ,a)
                 m+=a._metadata.n_particles
             except:
                 ValueError('Must Have Particle Number')

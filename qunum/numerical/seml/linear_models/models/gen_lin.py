@@ -1,44 +1,58 @@
 from .out_functions import getMap, Id
-from typing import Iterable, Any
+from typing import Iterable, Any, Sequence
 from torch.optim import Adam, SGD, Optimizer
 from .linear_model import LinearNN
 from ..estimators import *
 from torch import Tensor
 from ...fitting_algos.grad_descent.object import GradDescentTrain
 from ...data.data_loaders import DataLoader
+from ...data.preprocessing import ComputePoly
 import torch 
+import numpy as np 
 opt_map = {'adam':Adam, 'sgd':SGD}
 options = {'GLS', 'Ridge', 'Quantile', 'Lasso'}
+def doNothing(x:Tensor)->Tensor:
+    return x
 class GenLin:
     def __init__(self, *args, 
                  paramter_estimator:str = 'GLS', 
                  F:Id = Id(),
-                 ipt_cols:Iterable,
-                 out_cols:Iterable,
+                 x_shp:int|None = None,
+                 y_shp:int|None = None,
+                 x_cols:Sequence[str]|None=None,
+                 y_cols:Sequence[str]|None=None,
+                 interaction_cols:Sequence[str|int]|None = None,
                  lamda_or_quantile:float = 1.,
                  lr:float = 1e-2,
                  order:int = 1, 
                  interaction_order:int = 0,
                  optimizer:str = 'adam', 
-                 num_steps:int = int(1e3),
+                 num_epochs:int = int(1e3),
                  device:str = 'cpu',
+                 poly_pipe:bool = False,
                  **kwargs)->None|bool:
-
+         
+        if(x_shp is None and x_cols is None):
+            raise ValueError('Must provide an input shape or input column list')
+        elif(x_shp is not None and x_cols is None):
+            x_cols = np.arange(x_shp)
+        else:
+            x_shp = len(x_cols)
+        if(y_shp is None and y_cols is None):
+            raise ValueError('Must provide an output shape or output column list')
+        elif(y_shp is not None and y_cols is None):
+            y_cols = np.arange(y_shp)
+        else:
+            y_shp = len(y_cols)
         self.order = order 
-        self.interaction_order = interaction_order 
-        self.num_epochs = int(num_steps)
-
-
-        ipt_shape = len(ipt_cols)
-        ipt_shape = 1 + ipt_shape*self.order 
-        self.devide = 0
-        out_shape = len(out_cols)
-        
-        
-        self.polyI = ipt_shape**self.order
-        self.I = 1 + self.polyI + ((interaction_order*(interaction_order-1)*ipt_shape*(ipt_shape-1))/4)
-        
-        self.model = LinearNN(self.I, out_shape, F)
+        self.interaction_order = interaction_order
+        poly = ComputePoly(ipt_cols= x_cols, 
+                    order=order, 
+                    interaction_order=interaction_order, 
+                    interaction_cols=interaction_cols)
+        if(poly_pipe): self.poly = poly
+        else: self.poly = doNothing 
+        self.model = LinearNN(poly.I, y_shp, F)
         self.lamda_or_quantile = lamda_or_quantile
         self.device = device
         if(paramter_estimator not in options):
@@ -47,57 +61,29 @@ class GenLin:
             self.Loss = torch.nn.MSELoss()
             self.fit_it = mapping[paramter_estimator]
             self.grad_ = False
+            self.Optim = None
             
         else:
             self.Loss = mapping[paramter_estimator](lam = self.lamda_or_quantile)
             self.grad_ = True
             if(isinstance(optimizer, str)):
                 optimizer = opt_map[optimizer](lr=lr, **kwargs)
-            self.Optim = opt_map[optimizer]
-            self.fit_it = GradDescentTrain(self.model, self.Loss, self.Optim, epochs=self.num_epochs, device= device)
+            self.Optim = optimizer
+            self.fit_it = GradDescentTrain(self.model, self.Loss, self.Optim, epochs=num_epochs, device= device)
         return  
     
     def change_optim(self, opt:Optimizer, *args, **kwargs):
         self.Optim = opt(self.model.parameters, *args, **kwargs)
         return
     
-    def mk_poly(self,x:Tensor)->Tensor:
-        t = torch.empty((x.shape[0], self.I), dtype=x.dtype)
-        t[:, 0] = 1
-        t[1:1+self.polyI,:] = poly(x,self.order)
-        if(self.interaction_order):
-            t[1+self.polyI:, :] = poly_int(x, self.interaction_order, self.I-self.polyI-1)
-        return t.to(self.device)
-    
     def train(self, *args:tuple['x':torch.Tensor, 'y':torch.Tensor, 'xval':torch.Tensor, 'yval':torch.Tensor,]|tuple['trn':DataLoader, 'val':DataLoader], **kwargs:dict[Any])->None:
-        self.model.to(self.device)
-        if(self.grad_):
-            self.fit_it(*args, **kwargs)
+        self.model.requires_grad_(True)
+        if(self.Optim is not None):
+            self.fit_it(self.poly(args[0]),*args[1:], **kwargs)
         else:
-            self.model.parameters().data[0] = self.fit_it(args[0],args[1],self.lamda_or_quantile)
-        self.model.requires_grad_(False).to('cpu')
+            self.model.parameters().data[0] = self.fit_it(self.poly(args[0]),args[1],self.lamda_or_quantile)
+        self.model.requires_grad_(False)
         return
     def __call__(self, x:torch.Tensor)->torch.Tensor:
-        return self.model(x)
-@torch.jit.script
-def poly(x:Tensor, order:int)->Tensor:
-    X = torch.empty((x.shape[0], int(order**x.shape[1])))
-    X[:,0] = 1.0
-    for i in range(x.shape[1]):
-        for o in range(order):
-             X[:, (i*order)+o] = x[:, i]**o
-    return X
-
-
-
-@torch.jit.script
-def poly_int(x:Tensor, O:int, sp:int):
-    X = torch.empty((x.shape[0],  sp))
-    D = x.shape[1]
-    ct = 0
-    for i in range(D - 1):
-        for j in range(i + 1, D):
-            for o in range(O):
-                X[:,ct] = x[:, i * D + o] * x[:, j + D * o]
-                ct += 1
-    return X
+        return self.model(self.poly(x))
+        

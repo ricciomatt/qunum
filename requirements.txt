@@ -1,5 +1,6 @@
 torch
 torchviz
+torchvision
 complexPyTorch
 numpy
 polars 

@@ -73,6 +73,8 @@ qunum/numerical/seml/data/__init__.py
 qunum/numerical/seml/data/data_loaders/__init__.py
 qunum/numerical/seml/data/data_loaders/lazy.py
 qunum/numerical/seml/data/data_loaders/standard.py
+qunum/numerical/seml/data/data_loaders/pls/__init__.py
+qunum/numerical/seml/data/data_loaders/pls/pls_.py
 qunum/numerical/seml/data/data_splitters/__init__.py
 qunum/numerical/seml/data/data_splitters/random_split.py
 qunum/numerical/seml/data/pipelines/__init__.py
@@ -84,6 +86,8 @@ qunum/numerical/seml/data/preprocessing/cleaning/meta.py
 qunum/numerical/seml/data/preprocessing/cleaning/pds/__init__.py
 qunum/numerical/seml/data/preprocessing/cleaning/pds/standard.py
 qunum/numerical/seml/data/preprocessing/cleaning/pls/__init__.py
+qunum/numerical/seml/data/preprocessing/polynomial/__init__.py
+qunum/numerical/seml/data/preprocessing/polynomial/mk_poly.py
 qunum/numerical/seml/data/preprocessing/scaling/__init__.py
 qunum/numerical/seml/data/preprocessing/scaling/pds/__init__.py
 qunum/numerical/seml/data/preprocessing/scaling/pds/norm_scalers.py

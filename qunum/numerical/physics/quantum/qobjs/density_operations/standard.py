@@ -4,19 +4,26 @@ import numba as nb
 from numpy.typing import NDArray
 import torch
 
+
+@nb.njit("UnicodeCharSeq(17)[:](int64[:])", parallel = True)
+def nb_get_cols(arr:np.ndarray):
+    r = np.empty((arr.shape[0]), dtype='U17')
+    for i in nb.prange(arr.shape[0]):
+        r[i] = "column_"+str(i)
+    return r
+
 def get_cols(ix):
     return f"column_{str(ix)}"
 vgc = np.vectorize(get_cols)
 '''
-@nb.jit(parallel = True, fastmath = True)
-def ptrace_np_ix(ix:NDArray[np.int64], p:NDArray)->NDArray:
-    pA = NDArray.zeros(ix.shape[0], ix.shape[0], dtype = p.dtype)
+@nb.njit('complex128[:,:,:](int64[:,:], complex128[:,:,:])', parallel = True, fastmath = True)
+def nb_ptrace_ix(ix:NDArray[np.int64], p:NDArray)->NDArray:
+    pA = np.empty((p.shape[0],ix.shape[0], ix.shape[0]), dtype = p.dtype)
     for i in nb.prange(ix.shape[0]):
         for j in nb.prange(ix.shape[0]):
-            pA[i,j] = p[ix[i], ix[j]].sum()
+            pA[:, i, j] = p[:, ix[i], ix[j]].sum()
     return pA
 '''
-
 @torch.jit.script
 def ptrace_torch_ix(ix:torch.Tensor, p:torch.Tensor)->torch.Tensor:
     if(len(p.shape) == 2):
