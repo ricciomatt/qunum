@@ -14,23 +14,25 @@ class QobjMeta:
                  hilbert_space_dims:int = 2, 
                  shp:tuple[int] = None, 
                  check_hermitian:bool = False,)->None:
-        if(shp[-1] == shp[-2]):
+        if(shp[-1] == 1  and shp[-2] == 1):
+            self.obj_tp = 'scaler'
+            l = 1
+        elif(shp[-1] == shp[-2]):
             self.obj_tp = 'operator'
             l = shp[-1]
         elif(shp[-2] == 1):
             self.obj_tp = 'bra'
             l = shp[-1]
-        else:
+        elif(shp[-1] == 1):
             self.obj_tp = 'ket'
             l = shp[-2]
-        
         if(check_hermitian):
             self.check_hermitian = check_hermitian
             self.herm = False
         else:
             self.check_hermitian = check_hermitian
-            
-        if(hilbert_space_dims**n_particles == l):
+        
+        if(hilbert_space_dims**n_particles == l or self.obj_tp == 'scaler'):
             self.n_particles = n_particles
             self.hilbert_space_dims = hilbert_space_dims
         else:

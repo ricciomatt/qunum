@@ -75,6 +75,7 @@ class TQobj(Tensor):
              )
         else:
             self._metadata = meta
+        
         return 
     
     def __matmul__(self, O:object|Tensor)->object:
@@ -98,7 +99,7 @@ class TQobj(Tensor):
         except:
             meta = O._metadata
         M = super(TQobj, self).__mul__(O)
-        M.set_meta(meta= meta)
+        M.set_meta(meta = meta)
         return M
     
     def __add__(self, O:object|Tensor|float|int)->object:
@@ -109,7 +110,7 @@ class TQobj(Tensor):
         except:
             meta = O._metadata
         M = super(TQobj, self).__add__(O)
-        M.set_meta(meta= meta)
+        M.set_meta(meta = meta)
         return M
     
     def __sub__(self, O:object|Tensor|float|int)->object:
@@ -134,6 +135,16 @@ class TQobj(Tensor):
     
     def __rmul__(self, O:object|Tensor)->object:
         return self.__mul__(O)
+    
+    def __truediv__(self, O:object|Tensor)->object:
+        try:
+            meta = self._metadata
+        except:
+            meta = O._metadata
+        M = super(TQobj, self).__div__(O)
+        M.set_meta(meta= meta)
+        return M
+
     
     def __repr__(self)->str:
         try:
@@ -175,7 +186,6 @@ class TQobj(Tensor):
             M = self.conj().swapaxes(1,2)
             M.set_meta(meta= meta)
             return M
-        
         else: 
             M = self.conj().T
             M.set_meta(meta= meta)
@@ -216,7 +226,7 @@ class TQobj(Tensor):
             ix_ =  torch.tensor(
                 self._metadata.ixs.group_by(
                     pl.col(
-                        a
+                        a.tolist()
                         )
                     ).agg(
                         pl.col('row_nr').implode().alias('ix')
