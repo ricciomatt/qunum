@@ -25,7 +25,7 @@ class TQobj(Tensor):
                  *args,
                  meta:QobjMeta|None = None, 
                  n_particles:int|None = 1, 
-                 hilbert_space_dims:int|None = 2,
+                 hilbert_space_dims:int = 2,
                  sparsify:bool = True,
                  dtype = torch.complex128,
                  **kwargs):
@@ -38,8 +38,10 @@ class TQobj(Tensor):
 
         if(isinstance(data, torch.Tensor)):
             data = torch.tensor(data.detach().numpy(), *args, dtype=data.dtype, **kwargs)
+        elif(isinstance(data, np.ndarray)):
+            data = torch.from_numpy(data, *args, dtype=dtype, **kwargs)
         else:
-            data = torch.tensor(data, *args, dtype=dtype, **kwargs)
+            raise TypeError('Must be Numpy Array or Tensor Type')
             
         obj = super(TQobj, cls).__new__(cls, data)
         return obj
