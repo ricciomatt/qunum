@@ -28,6 +28,4 @@ rho = Full_Operator @ rho @ Full_Operator.dag()
 
 S0 = rho.Tr(0).entropy()
 I01 = rho.mutual_info(0,1)
-
-
 ```

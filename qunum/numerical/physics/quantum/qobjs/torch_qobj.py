@@ -24,8 +24,8 @@ class TQobj(Tensor):
                 data,
                  *args,
                  meta:QobjMeta|None = None, 
-                 n_particles:int = 1, 
-                 hilbert_space_dims:int =2,
+                 n_particles:int|None = 1, 
+                 hilbert_space_dims:int|None = 2,
                  sparsify:bool = True,
                  dtype = torch.complex128,
                  **kwargs):
@@ -48,8 +48,8 @@ class TQobj(Tensor):
                  data,
                  *args,
                  meta:QobjMeta|None = None, 
-                 n_particles:int = 1, 
-                 hilbert_space_dims:int =2,
+                 n_particles:int|None = 1, 
+                 hilbert_space_dims:int|None = None,
                  sparsify:bool = True,
                  dtype = torch.complex128,
                  **kwargs)->object:

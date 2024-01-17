@@ -10,10 +10,12 @@ import warnings
 from IPython.display import display as disp, Markdown as md, Math as mt
 import itertools
 class QobjMeta:
-    def __init__(self, n_particles:int= None,
+    def __init__(self, 
+                 n_particles:int= 1,
                  hilbert_space_dims:int = 2, 
                  shp:tuple[int] = None, 
                  check_hermitian:bool = False,)->None:
+        
         if(shp[-1] == 1  and shp[-2] == 1):
             self.obj_tp = 'scaler'
             l = 1
@@ -26,41 +28,36 @@ class QobjMeta:
         elif(shp[-1] == 1):
             self.obj_tp = 'ket'
             l = shp[-2]
+        self.shp = shp
         if(check_hermitian):
             self.check_hermitian = check_hermitian
             self.herm = False
         else:
-            self.check_hermitian = check_hermitian
-        
-        if(hilbert_space_dims**n_particles == l or self.obj_tp == 'scaler'):
-            self.n_particles = n_particles
-            self.hilbert_space_dims = hilbert_space_dims
-        else:
-            if(hilbert_space_dims == 2): warnings.warn('Assuming that this is a 2d hilbert space')
-            self.hilbert_space_dims = hilbert_space_dims
-            n = np.log(l)/np.log(self.hilbert_space_dims)
-            if(n == int(n)): 
-                raise RuntimeError('Dimension of Object must be integer log_{hilbert_space_dims}(n_particles) must be an integer value')
-            else: 
-                self.n_particles = int(n)
-            
+            self.check_hermitian = check_hermitian        
+        if not (hilbert_space_dims**n_particles == l or self.obj_tp == 'scaler'):
+            n_particles = np.log(l)/np.log(hilbert_space_dims)
+            assert (n_particles == int(n_particles)), 'Dimension of Object must be integer log_{hilbert_space_dims}(n_particles) must be an integer value'
+        self.n_particles = int(n_particles)
+        self.hilbert_space_dims = int(hilbert_space_dims)
+        self.shp = shp
         self.ixs = pl.DataFrame(
                 np.array(
                     list(
                         itertools.product(
                             range(
-                                self.hilbert_space_dims
+                                hilbert_space_dims
                             ), 
                             repeat=n_particles)
                          )
                         )
                 ).with_row_count().lazy()
         return
+    
     def __repr__(self):
         return self.__str__()
     
     def __str__(self):
-        return f'$$n_{{particles}}= {str(self.n_particles)}\nn_{{hilbert\\;dims}}={str(self.hilbert_space_dims)}\ntype={str(self.obj_tp)}$$'
+        return f'''TQobj(n_particles={str(self.n_particles)}, hilbert_space_dims={str(self.hilbert_space_dims)}, shape={self.shp}, object_tp='{str(self.obj_tp)}')'''
         
 
 
