@@ -3,7 +3,8 @@ import numpy as np
 import numba as nb
 from numpy.typing import NDArray
 import torch
-
+from torch import Tensor, kron
+from ..meta import QobjMeta
 
 @nb.njit("UnicodeCharSeq(17)[:](int64[:])", parallel = True)
 def nb_get_cols(arr:np.ndarray):
@@ -39,6 +40,20 @@ def ptrace_torch_ix(ix:torch.Tensor, p:torch.Tensor)->torch.Tensor:
     return pA
 
 
+@torch.jit.script
+def ptrace_bwd_torch_ix(ix:torch.Tensor, p:TQobj)->TQobj:
+    if(len(p.shape) == 2):
+        pA = TQobj(torch.zeros(ix.shape[0], ix.shape[0], dtype = p.dtype, dtype = p.dtype, requires_grad=p.requires_grad))
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[i,j] = p[ix[i], ix[j]].sum()
+    else:
+        pA = TQobj(torch.zeros(p.shape[0], ix.shape[0], ix.shape[0], dtype = p.dtype ), requires_grad=p.requires_grad,  hilbert_space_dims=p._metadata.hilbert_space_dims)
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[:, i,j] += p[:, ix[i], ix[j]].sum(dim = [1])
+    return pA
+
 
 @torch.jit.script
 def ventropy(p:torch.Tensor, epsi:float = 1e-8)->torch.Tensor:
@@ -58,6 +73,7 @@ def ventropy(p:torch.Tensor, epsi:float = 1e-8)->torch.Tensor:
             logLam[ix] = 0
             S-=Lam[:,i]*logLam   
     return S
+
 @torch.jit.script
 def pT_arr(p:torch.Tensor, ixs:torch.Tensor):
     k = torch.empty_like(p)
@@ -70,4 +86,20 @@ def pT_arr(p:torch.Tensor, ixs:torch.Tensor):
     return k
     
 
+@torch.jit.script
+def ptrace_loc_ix(ix:Tensor, p:TQobj)->TQobj:
+    if(len(p.shape) == 2):
+        pA = torch.zeros((ix.shape[0], ix.shape[0]), dtype = p.dtype)
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[i,j] = p[ix[i], ix[j]].sum()
+    else:
+        pA = torch.zeros((p.shape[0], ix.shape[0], ix.shape[0]), dtype = p.dtype)
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[:, i,j] += p[:, ix[i], ix[j]].sum(dim = [1])
+    return pA
 
+
+
+from ..torch_qobj import TQobj

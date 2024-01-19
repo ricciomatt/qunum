@@ -28,15 +28,19 @@ class QobjMeta:
         elif(shp[-1] == 1):
             self.obj_tp = 'ket'
             l = shp[-2]
+        else:
+            print(shp)
         self.shp = shp
         if(check_hermitian):
             self.check_hermitian = check_hermitian
             self.herm = False
         else:
-            self.check_hermitian = check_hermitian        
+            self.check_hermitian = check_hermitian
         if not (hilbert_space_dims**n_particles == l or self.obj_tp == 'scaler'):
             n_particles = np.log(l)/np.log(hilbert_space_dims)
-            assert (n_particles == int(n_particles)), 'Dimension of Object must be integer log_{hilbert_space_dims}(n_particles) must be an integer value'
+            assert (n_particles == int(n_particles)), f'Dimension of Object must be integer log_{hilbert_space_dims}(n_particles) must be an integer value this is not the case for input values of n_particles = {n_particles} and hilbert_space_dims = {hilbert_space_dims}'
+
+        
         self.n_particles = int(n_particles)
         self.hilbert_space_dims = int(hilbert_space_dims)
         self.shp = shp
@@ -45,9 +49,9 @@ class QobjMeta:
                     list(
                         itertools.product(
                             range(
-                                hilbert_space_dims
+                                self.hilbert_space_dims
                             ), 
-                            repeat=n_particles)
+                            repeat=self.n_particles)
                          )
                         )
                 ).with_row_count().lazy()

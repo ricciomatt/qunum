@@ -4,16 +4,12 @@ try:
     import numpy as np
 except:
     import numpy as cp
-
 import numpy as np
 import pandas as pd
 import polars as pl
-from imblearn.over_sampling import ADASYN,SMOTE,SMOTEN,SMOTENC, SVMSMOTE, KMeansSMOTE, RandomOverSampler
-
 from ...scaling import NormScaler
 from .....stats.stats_rbst import rbst_sig
-from ......finite_element.grid_space import ord_to_grid
-import nltk.tokenize as tokenizer
+from ......numerics.grid_space import ord_to_grid
 from .....kernals import Kernal
 from ...scaling import NormScaler
 
@@ -64,6 +60,8 @@ class PdDataCleaner:
         return 
     
     def tokenize_data(self):
+        import nltk.tokenize as tokenizer
+        
         pass 
     
     def dummify_and_drop(self,df:pd.DataFrame)->tuple[pd.DataFrame, np.array]:
@@ -168,9 +166,17 @@ class PdDataCleaner:
     def test_train_split(self, train_pct:float=.75, under_sample:bool = False, over_sample:bool = False, min_:float=0.0, max_:float=1.0)->tuple[np.array, np.array, np.array, np.array]:
         pass 
     
-    def test_train_split_oversample_syn(self, train_pct:float=.75, under_sample:bool = False, over_sample:bool = False, min_:float=0.0, max_:float=1.0, sampler = SMOTE)->tuple[np.array, np.array, np.array, np.array]:
+    def test_train_split_oversample_syn(self, train_pct:float=.75, under_sample:bool = False, over_sample:bool = False, min_:float=0.0, max_:float=1.0, sampler = None)->tuple[np.array, np.array, np.array, np.array]:
+        from imblearn.over_sampling import ADASYN,SMOTE,SMOTEN,SMOTENC, SVMSMOTE, KMeansSMOTE, RandomOverSampler
+        
         pass 
     
-    def test_train_split_undersample_syn(self, train_pct:float=.75, under_sample:bool = False, over_sample:bool = False, min_:float=0.0, max_:float=1.0, sampler = SMOTE)->tuple[np.array, np.array, np.array, np.array]:
+    def test_train_split_undersample_syn(self, train_pct:float=.75, under_sample:bool = False, over_sample:bool = False, min_:float=0.0, max_:float=1.0, sampler = None)->tuple[np.array, np.array, np.array, np.array]:
+        
+        from imblearn.over_sampling import ADASYN,SMOTE,SMOTEN,SMOTENC, SVMSMOTE, KMeansSMOTE, RandomOverSampler
+        import nltk.tokenize as tokenizer
+        if(sampler is None):
+            sampler = SMOTE
+        
         pass 
     

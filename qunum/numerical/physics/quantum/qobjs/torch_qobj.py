@@ -6,7 +6,7 @@ from typing import Any, Iterable
 import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
-from .density_operations import ptrace_torch_ix as ptrace_ix, vgc, nb_get_cols, pT_arr, ventropy
+from .density_operations import ptrace_torch_ix as ptrace_ix, vgc, nb_get_cols, pT_arr, ventropy, cummatprod_
 from warnings import warn
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch import Tensor
@@ -37,7 +37,7 @@ class TQobj(Tensor):
                 kwargs['requires_grad'] = False
 
         if(isinstance(data, torch.Tensor)):
-            data = torch.tensor(data.detach().numpy(), *args, dtype=data.dtype, **kwargs)
+           pass
         elif(isinstance(data, np.ndarray)):
             data = torch.from_numpy(data, *args, dtype=dtype, **kwargs)
         else:
@@ -51,7 +51,7 @@ class TQobj(Tensor):
                  *args,
                  meta:QobjMeta|None = None, 
                  n_particles:int|None = 1, 
-                 hilbert_space_dims:int|None = None,
+                 hilbert_space_dims:int= 2,
                  sparsify:bool = True,
                  dtype = torch.complex128,
                  **kwargs)->object:
@@ -83,47 +83,23 @@ class TQobj(Tensor):
     def __matmul__(self, O:object|Tensor)->object:
         if not (isinstance(O, TQobj) or isinstance(O,Tensor)):
             raise TypeError('Must Be TQobj or Tensor')
-        try:
-            meta = self._metadata
-        except:
-            meta = O._metadata
         M = super(TQobj, self).__matmul__(O)
-        if(len(M.shape) == 0):
-            pass
-        else:
-            meta = QobjMeta(n_particles=meta.n_particles, hilbert_space_dims=meta.hilbert_space_dims, shp=M.shape)
-        M.set_meta(meta= meta)
+        M.set_meta(meta = QobjMeta(n_particles=self._metadata.n_particles, hilbert_space_dims=self._metadata.hilbert_space_dims, shp=M.shape))
         return M
     
     def __mul__(self, O:object|Tensor|float|int)->object:
-        try:
-            meta = self._metadata
-        except:
-            meta = O._metadata
         M = super(TQobj, self).__mul__(O)
-        M.set_meta(meta = meta)
+        M.set_meta(meta = self._metadata)
         return M
     
     def __add__(self, O:object|Tensor|float|int)->object:
-        if not (isinstance(O, TQobj) or isinstance(O,Tensor) or isinstance(O,float) or isinstance(O,int) or isinstance(O,complex)):
-            raise TypeError('Must Be TQobj or Tensor')
-        try:
-            meta = self._metadata
-        except:
-            meta = O._metadata
         M = super(TQobj, self).__add__(O)
-        M.set_meta(meta = meta)
+        M.set_meta(meta =self._metadata)
         return M
     
     def __sub__(self, O:object|Tensor|float|int)->object:
-        if not (isinstance(O, TQobj) or isinstance(O,Tensor) or isinstance(O,float) or isinstance(O,int) or isinstance(O,complex)):
-            raise TypeError('Must Be TQobj or Tensor')
-        try:
-            meta = self._metadata
-        except:
-            meta = O._metadata
         M = super(TQobj, self).__sub__(O)
-        M.set_meta(meta= meta)
+        M.set_meta(meta= self._metadata)
         return M
     
     def __radd__(self, O:object|Tensor)->object:
@@ -139,12 +115,8 @@ class TQobj(Tensor):
         return self.__mul__(O)
     
     def __truediv__(self, O:object|Tensor)->object:
-        try:
-            meta = self._metadata
-        except:
-            meta = O._metadata
         M = super(TQobj, self).__div__(O)
-        M.set_meta(meta= meta)
+        M.set_meta(meta= self._metadata)
         return M
 
     
@@ -152,7 +124,7 @@ class TQobj(Tensor):
         try:
             str_ = self._metadata.__str__()
         except:
-            str_ = 'No meta data available'
+            str_ = 'No dataset available'
         return str_+'\n'+super(TQobj, self).__repr__()
     def __str__(self)->str:
         return self.__repr__()
@@ -194,9 +166,8 @@ class TQobj(Tensor):
             return M
     
     def expm(self)->object:
-        meta = self._metadata
         M = torch.linalg.matrix_exp(self)
-        M.set_meta(meta = meta)
+        M.set_meta(meta = self._metadata)
         return M
 
     def logm(self)->object:
@@ -235,9 +206,13 @@ class TQobj(Tensor):
                     ).fetch().sort(a)['ix'].to_list()
                 )[:,0]
             meta = copy.copy(self._metadata)
-            meta.n_particles -= 1
+            meta.n_particles = int(np.log(ix_.shape[0])/np.log(self._metadata.hilbert_space_dims))
         if(self.requires_grad):
-            return ptrace_loc_ix(ix_, self)
+            if(len(self.shape) > 2):
+                pA = TQobj(torch.zeros((self.shape[0], ix_.shape[0], ix_.shape[0]), dtype=self.dtype), meta = meta)
+            else:
+                pA = TQobj(torch.zeros((ix_.shape[0], ix_.shape[0]), dtype=self.dtype), meta = meta)
+            return ptrace_bwd_ix(ix_, self, pA)
         else:
             return TQobj(ptrace_ix(ix_, self.clone().detach()), meta = meta)  
     
@@ -419,10 +394,7 @@ class TQobj(Tensor):
     
     def sum(self, **kwargs):
         M = super(TQobj, self).sum(**kwargs)
-        try:
-            M.set_meta(self._metadata)
-        except:
-            M = M.to_tensor()
+        M.set_meta(self._metadata)
         return M
     
 class TQobjEvo(Tensor):
@@ -464,7 +436,33 @@ class TQobjEvo(Tensor):
         return
     
 
-#@nb.jit(nopython=False, forceobj=True)
+@torch.jit.script
+def ptrace_bwd_ix(ix:torch.Tensor, p:TQobj, pA:TQobj)->TQobj:
+    if(len(p.shape) == 2):
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[i,j] += p[ix[i], ix[j]].sum()
+    else:
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[:, i,j] += p[:, ix[i], ix[j]].sum(dim = [1])
+    return pA
+
+'''
+@torch.jit.script
+def ptrace_bwd_ix(ix:Tensor, p:TQobj)->TQobj:
+    if(len(p.shape) == 2):
+        pA = torch.zeros((ix.shape[0], ix.shape[0]), dtype = p.dtype, requires_grad=p.requires_grad)
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[i,j] = p[ix[i], ix[j]].sum()
+    else:
+        pA = torch.zeros((p.shape[0], ix.shape[0], ix.shape[0]), dtype = p.dtype, requires_grad=p.requires_grad)
+        for i in range(ix.shape[0]):
+            for j in range(ix.shape[0]):
+                pA[:, i,j] += p[:, ix[i], ix[j]].sum(dim = [1])
+    return pA
+'''
 def direct_prod(*args:tuple[TQobj])->TQobj:
     A = args[0]
     if(not isinstance(A, TQobj)):
@@ -479,7 +477,7 @@ def direct_prod(*args:tuple[TQobj])->TQobj:
     for i, a in enumerate(args[1:]):
         if(isinstance(a, TQobj)):
             try:
-                A = kron(A ,a)
+                A = torch.kron(A ,a)
                 m+=a._metadata.n_particles
             except:
                 ValueError('Must Have Particle Number')
@@ -488,22 +486,3 @@ def direct_prod(*args:tuple[TQobj])->TQobj:
     meta = QobjMeta(n_particles=m, hilbert_space_dims=h, shp=A.shape)
     return TQobj(A, n_particles=m, hilbert_space_dims=h, meta = meta)
 
-@torch.jit.script
-def cummatprod_(O: Tensor) -> Tensor:
-    for i in range(1, O.size(0)):
-        O[i] = O[i] @ O[i-1]
-    return O
-
-@torch.jit.script
-def ptrace_loc_ix(ix:Tensor, p:TQobj)->TQobj:
-    if(len(p.shape) == 2):
-        pA = torch.zeros((ix.shape[0], ix.shape[0]), dtype = p.dtype)
-        for i in range(ix.shape[0]):
-            for j in range(ix.shape[0]):
-                pA[i,j] = p[ix[i], ix[j]].sum()
-    else:
-        pA = torch.zeros((p.shape[0], ix.shape[0], ix.shape[0]), dtype = p.dtype)
-        for i in range(ix.shape[0]):
-            for j in range(ix.shape[0]):
-                pA[:, i,j] += p[:, ix[i], ix[j]].sum(dim = [1])
-    return pA

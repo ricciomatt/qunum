@@ -46,7 +46,7 @@ class HamiltonianLossFunction:
 class ShrodingerEqLossLoss:
     def __init__(self,
                  H:LazyTimeHamiltonian,
-                 time_dim:int)->None:
+                 time_dim:int = 0)->None:
         self.H = H
         self.time_dim = time_dim
         return

@@ -16,10 +16,10 @@ from ...fitting_algos import grad_descent
 from ...nn import optimizers as optimizer
 
 from ...stats.stats_rbst import rbst_sig
-from ....finite_element.grid_space import ord_to_grid, construct_cont_gen
+from ....numerics.grid_space import ord_to_grid, construct_cont_gen
 import nltk.tokenize as tokenizer
 from ...data.preprocessing.scaling import NormScaler
-from ....finite_element import integrators_
+from ....numerics import integrators_
 
 from typing import Callable
 from numpy.typing import NDArray

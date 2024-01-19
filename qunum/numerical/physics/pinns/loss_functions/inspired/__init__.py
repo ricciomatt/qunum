@@ -1,1 +1,1 @@
-from .non_relatavistic import *
+from .schrodinger import SchrodingerEqLossLoss

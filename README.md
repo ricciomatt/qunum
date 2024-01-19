@@ -29,3 +29,19 @@ rho = Full_Operator @ rho @ Full_Operator.dag()
 S0 = rho.Tr(0).entropy()
 I01 = rho.mutual_info(0,1)
 ```
+#### Differentiation
+
+```
+from qunum import qunum as qn 
+from torch.autograd import grad as D
+t = torch.linspace(0, 1, 1_000)
+t = t.type(torch.complex128).requires_grad_(True)
+
+Psi = qn.TQobj(torch.zeros((1000, 2, 1), dtype = torch.complex128))
+
+Psi[:,0,0] = torch.sin(t)
+Psi[:, 1, 0] = torch.cos(t)
+
+D(Psi[:, 1, 0] , t, grad_outputs=torch.ones_like(t), retain_graph = True, create_graph=False)
+
+```

@@ -4,7 +4,7 @@ from typing import Callable
 from .obj import MeanField
 from .phyics_functs import *
 from ......data.hamiltonian import LazyTimeHamiltonian
-from .......finite_element.integrators import NewtonCoates
+from .......numerics.integrators import NewtonCoates
 from .....qobjs import TQobj, direct_prod
 from ....nuetrino import pmns2
 import numpy as np 
