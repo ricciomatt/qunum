@@ -1,5 +1,5 @@
-from . import symbolic as sym
-from . import numerical as num
+from . import symbolic as qusym
+from . import numerical as qunum
 from .numerical import phys, TQobj, direct_prod, qpid, seml
 from .symbolic import SQobj
 

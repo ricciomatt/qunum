@@ -2,7 +2,7 @@ from typing import Callable
 import torch
 from .phyics_functs import hamiltonian_operator, H0, H1, get_J
 from torch import Tensor
-from .......algebra.representations.su import get_pauli, get_gellmann
+from .......mathematics.algebra.representations.su import get_gellmann, get_pauli
 from .....qobjs import TQobj
 from IPython.display import display as disp, Markdown as md
 from sympy import latex, Matrix, I

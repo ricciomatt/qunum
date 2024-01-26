@@ -2,10 +2,10 @@ from typing import Any
 import torch
 from .....physics.data.hamiltonian import LazyTimeHamiltonian
 import numpy as np
-from .....finite_element.integrators import NewtonCoates, integrate_newton_coates_do as newton
+from .....numerics.integrators import NewtonCoates, integrate_newton_coates_do as newton
 from scipy.special import bernoulli
 from torch import einsum
-from .....algebra import ad
+from .....mathematics.algebra import ad
 from .....physics.quantum import TQobj
 from IPython.display import display as disp, Math as Mt
 

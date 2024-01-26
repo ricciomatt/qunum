@@ -2,7 +2,7 @@ from typing import Any
 import torch
 from torch.nn import Module, Linear, Sigmoid, Tanh, Softmax, Conv1d, Sequential, ReLU, LeakyReLU as LeLU
 from torch import Tensor
-from ....algebra.representations import su
+from ....mathematics.algebra.representations import su
 from ...quantum.qobjs.torch_qobj import TQobj, direct_prod as dp_
 from torch.linalg import matrix_exp as expm
 from typing import Callable

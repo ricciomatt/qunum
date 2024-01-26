@@ -1,4 +1,3 @@
-import pandas as pd
 from numpy import pi
 from . import unit_conversion as uc
 
@@ -21,7 +20,8 @@ Solar_Mass = 2e30
 
 '''Mass Parameters Standard'''
 def get_sm():
-    return pd.read_csv(f'./constants/standard_model_quantum_numbers_and_properties.csv').set_index('Particle')
+    import polars as pl
+    return pl.read_csv(f'./constants/standard_model_quantum_numbers_and_properties.csv')
 
 '''Mass Special Composite Paritcles'''
 me_ev = 0.510998950e6

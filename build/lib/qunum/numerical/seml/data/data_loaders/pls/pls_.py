@@ -2,7 +2,8 @@ import polars as pl
 from typing import Sequence
 import numpy as np 
 from ...pipelines import PrePipe
-from torch.utils.data import DataLoader, Dataset, SequentialSampler, BatchSampler, RandomSampler, WeightedRandomSampler, Sampler
+from torch.utils.data import DataLoader, Dataset
+from torch import from_numpy, Tensor
 
 
 def make_pls_data_loader(df:pl.DataFrame, x_cols:Sequence[str], y_cols:Sequence[str], 
@@ -36,8 +37,13 @@ class LazyPolarsDs(Dataset):
     def __iter__(self)->None:
         return 
     
-    def __getitem__(self, ix:int)->None:
-        t = self.df.filter(pl.col('row_nr')==ix).fetch(1)
-        return (self.pipe(t[self.x_cols].to_numpy())[0], t[self.y_cols].to_numpy())
+    def __getitem__(self, ix:int)->tuple[Tensor, Tensor]:
+        print(ix)
+        t = pl.DataFrame(self.pipe(self.df.filter(pl.col('row_nr')==ix).fetch(1)))
+        return (
+                    from_numpy(t[self.x_cols].to_arrow().to_numpy()), 
+                    from_numpy(t[self.y_cols].to_arrow().to_numpy())
+                )
+    
     def __len__(self)->int:
         return self.shp

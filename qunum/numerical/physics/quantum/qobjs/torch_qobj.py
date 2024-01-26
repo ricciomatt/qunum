@@ -14,8 +14,6 @@ import numpy as np
 from torch import kron
 import numba as nb
 from itertools import combinations, product
-from ....algebra.representations import su
-from ....algebra import commutator as comm
 from scipy.linalg import logm
 
 '''Need to Fix the Gradient Function'''
@@ -27,6 +25,7 @@ class TQobj(Tensor):
                  n_particles:int|None = 1, 
                  hilbert_space_dims:int = 2,
                  sparsify:bool = True,
+                 dims:None|dict[str:int] = None,
                  dtype = torch.complex128,
                  **kwargs):
         #obj = super(TQobj,cls).__new__(cls, data,*args, dtype = torch.complex64,**kwargs)
@@ -35,14 +34,9 @@ class TQobj(Tensor):
                 kwargs['requires_grad'] = data.requires_grad
             except:
                 kwargs['requires_grad'] = False
-
-        if(isinstance(data, torch.Tensor)):
-           pass
-        elif(isinstance(data, np.ndarray)):
+        if(isinstance(data, np.ndarray)):
             data = torch.from_numpy(data, *args, dtype=dtype, **kwargs)
-        else:
-            raise TypeError('Must be Numpy Array or Tensor Type')
-            
+        assert isinstance(data, Tensor), TypeError('Must be Numpy Array or Tensor Type')
         obj = super(TQobj, cls).__new__(cls, data)
         return obj
     
@@ -52,11 +46,11 @@ class TQobj(Tensor):
                  meta:QobjMeta|None = None, 
                  n_particles:int|None = 1, 
                  hilbert_space_dims:int= 2,
+                 dims:None|dict[str:int] = None,
                  sparsify:bool = True,
-                 dtype = torch.complex128,
                  **kwargs)->object:
         super(TQobj, self).__init__()
-        self.set_meta(meta=meta, n_particles=n_particles,hilbert_space_dims=hilbert_space_dims,sparsify=sparsify)
+        self.set_meta(meta=meta, n_particles=n_particles,hilbert_space_dims=hilbert_space_dims, dims=dims, sparsify=sparsify)
        
         if(self.requires_grad):
             self.retain_grad()
@@ -68,11 +62,13 @@ class TQobj(Tensor):
                  meta:QobjMeta|None = None, 
                  n_particles:int = 1, 
                  hilbert_space_dims:int =2,
+                 dims:None|dict[int:set] = None ,
                  sparsify:bool = True,):
         if(meta is None):
             self._metadata = QobjMeta(
                 n_particles=n_particles, 
                 hilbert_space_dims=hilbert_space_dims,
+                dims = dims,
                 shp = self.shape
              )
         else:
@@ -84,7 +80,7 @@ class TQobj(Tensor):
         if not (isinstance(O, TQobj) or isinstance(O,Tensor)):
             raise TypeError('Must Be TQobj or Tensor')
         M = super(TQobj, self).__matmul__(O)
-        M.set_meta(meta = QobjMeta(n_particles=self._metadata.n_particles, hilbert_space_dims=self._metadata.hilbert_space_dims, shp=M.shape))
+        M.set_meta(meta = QobjMeta(n_particles=self._metadata.n_particles, hilbert_space_dims=self._metadata.hilbert_space_dims, dims = self._metadata.dims, shp=M.shape))
         return M
     
     def __mul__(self, O:object|Tensor|float|int)->object:
@@ -173,29 +169,25 @@ class TQobj(Tensor):
     def logm(self)->object:
         return TQobj(logm(self.detach().numpy()), meta = self._metadata)
     
-    def to_tensor(self)->Tensor:
-        return torch.tensor(self.data.detach().numpy(), dtype= self.dtype)
+    def to_tensor(self, detach=True)->Tensor:
+        if(detach or self.requires_grad == False):
+            return torch.from_numpy(self.data.detach().numpy())
     
-    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None):
+    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, reorder:bool = False):
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
         if(tr_out is None and keep is None):
             return self.diagonal(dim1=-2, dim2=-1).sum(dim=-1)
         else:
-            
             if(tr_out is not None):
+                tr_out = self._metadata.check_particle_ixs(tr_out)
                 ix = np.arange(self._metadata.n_particles)
                 ix = np.delete(ix, tr_out)
-                a = vgc(ix)
             else:
-                if(isinstance(keep,int) ):
-                    keep = [keep]
-                elif(isinstance(keep, slice)):
-                    ix = np.arange(self._metadata.n_particles)[keep]
-                    keep = ix.copy()
-                a = vgc(keep)
-            if(a.shape[0] == self._metadata.n_particles):
+                ix = self._metadata.check_particle_ixs(keep)
+            if(ix.shape[0] == self._metadata.n_particles):
                 return self
+            a:np.ndarray = vgc(ix)
             ix_ =  torch.tensor(
                 self._metadata.ixs.group_by(
                     pl.col(
@@ -203,10 +195,10 @@ class TQobj(Tensor):
                         )
                     ).agg(
                         pl.col('row_nr').implode().alias('ix')
-                    ).fetch().sort(a)['ix'].to_list()
+                    ).collect().sort(a)['ix'].to_list()
                 )[:,0]
             meta = copy.copy(self._metadata)
-            meta.n_particles = int(np.log(ix_.shape[0])/np.log(self._metadata.hilbert_space_dims))
+            meta.update_dims(ix, reorder=reorder)
         if(self.requires_grad):
             if(len(self.shape) > 2):
                 pA = TQobj(torch.zeros((self.shape[0], ix_.shape[0], ix_.shape[0]), dtype=self.dtype), meta = meta)
@@ -214,20 +206,22 @@ class TQobj(Tensor):
                 pA = TQobj(torch.zeros((ix_.shape[0], ix_.shape[0]), dtype=self.dtype), meta = meta)
             return ptrace_bwd_ix(ix_, self, pA)
         else:
-            return TQobj(ptrace_ix(ix_, self.clone().detach()), meta = meta)  
+            A = TQobj(ptrace_ix(ix_, self.clone().detach()), meta = meta) 
+            A._metadata.shp = A.shape
+            return  A
     
     def pT(self, ix_T:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        a = vgc(np.array(ix_T, dtype = np.int64))
+        a:np.ndarray = vgc(np.array(self._metadata.check_particle_ixs(ix_T), dtype = np.int64))
         ix_ =  torch.tensor(
             self._metadata.ixs.groupby(
                 pl.col(
-                    a
+                    a.tolist()
                     )
                 ).agg(
                     pl.col('row_nr').implode().alias('ix')
-                ).fetch().sort(a)['ix'].to_list()
+                ).collect().sort(a)['ix'].to_list()
             )[:,0]
         return TQobj(pT_arr(torch.tensor(self), ix_), meta = self._metadata)
     
@@ -237,12 +231,12 @@ class TQobj(Tensor):
         return ventropy(self)
     
     def polarization_vector(self, particle:int)->torch.Tensor:
-        if(self._metadata.obj_tp != 'operator'):
-            raise ValueError('Must be an operator')
-        if(self._metadata.hilbert_space_dims != 2):
-            raise ValueError('Only 2^n, hilbert spaces supported')
-        p = self.Tr(keep=particle)
-        s = su.get_pauli(to_tensor= True)
+        from ....mathematics.algebra.representations import su
+        assert self._metadata.obj_tp == 'operator', TypeError('Must be an operator')
+        assert self._metadata.dims[particle] == 2, ValueError('PVec Support Limited to only the SU(2) case for now')
+
+        p = self.Tr(keep=particle).to_tensor()
+        s = su.get_pauli(to_tensor= True).to(self.dtype)
         shp = self.shape
         if(len(shp)>3):
             raise TypeError('Only implemented for 2 and 3d opers')
@@ -281,6 +275,7 @@ class TQobj(Tensor):
         return rhoA.entropy() + rhoB.entropy() - rhoAB.entropy()
     
     def pauli_decomposition(self, ret_sig:bool = False, keep_all:bool = False)->tuple[dict|object]|tuple[dict]:
+        from ....mathematics.algebra.representations import su
         if(self._metadata.hilbert_space_dims != 2):
             raise ValueError('To pauli decompose mus be 2d hilbert spaces ')
         sig = TQobj(su.get_pauli(to_tensor=True), n_particles=1)
@@ -299,6 +294,7 @@ class TQobj(Tensor):
         return tuple(R)
     
     def block_decimate(self)->dict[dict[str:Tensor]]:
+        from ....mathematics.algebra import commutator as comm
         P, sig = self.pauli_decomposition(ret_sig = True, keep_all= False)
         Blocks = {}
         keys = list(P.keys())
@@ -395,6 +391,7 @@ class TQobj(Tensor):
     def sum(self, **kwargs):
         M = super(TQobj, self).sum(**kwargs)
         M.set_meta(self._metadata)
+        M._metadata.shp = M.shape
         return M
     
 class TQobjEvo(Tensor):
@@ -464,25 +461,16 @@ def ptrace_bwd_ix(ix:Tensor, p:TQobj)->TQobj:
     return pA
 '''
 def direct_prod(*args:tuple[TQobj])->TQobj:
+    from string import ascii_uppercase
     A = args[0]
-    if(not isinstance(A, TQobj)):
-        A = A[0]
-        args = args[0]
-        if(not isinstance(A, TQobj)):
-            raise TypeError('Must be TQobj')
-    
-    m = A._metadata.n_particles
-    h = A._metadata.hilbert_space_dims
-    A = A
+    assert isinstance(A, TQobj), f'Arguments must be Qunatum Objects(TQobj), item 0'
+    dims = {ix:A._metadata.dims[d] for ix, d in enumerate(A._metadata.dims)}
+    cixs = ''.join(map(lambda ix: ascii_uppercase[ix], range(len(A.shape[:-2]))))
     for i, a in enumerate(args[1:]):
-        if(isinstance(a, TQobj)):
-            try:
-                A = torch.kron(A ,a)
-                m+=a._metadata.n_particles
-            except:
-                ValueError('Must Have Particle Number')
-        else:
-            raise TypeError('Must be TQobj')
-    meta = QobjMeta(n_particles=m, hilbert_space_dims=h, shp=A.shape)
-    return TQobj(A, n_particles=m, hilbert_space_dims=h, meta = meta)
-
+        assert isinstance(a, TQobj), f'Arguments must be Qunatum Objects(TQobj), item {i}'
+        assert isinstance(a._metadata, QobjMeta), f"Arguments must have valid Object Data, item {i}"     
+        A = torch.flatten(torch.flatten(torch.einsum(f'{cixs}ij, {cixs}km->{cixs}ikjm', A, a), start_dim=-2), start_dim=-3, end_dim=-2)
+        tdims = {len(dims)+ix:a._metadata.dims[d] for ix, d in enumerate(a._metadata.dims)}
+        dims.update(tdims)
+    meta = QobjMeta(dims=dims, shp=A.shape)
+    return TQobj(A, meta = meta)

@@ -5,7 +5,7 @@ from . import stats_rbst
 import scipy as sp
 import scipy.stats as st
 from typing import Callable
-from ...finite_element.grid_space import ord_to_grid
+from ...numerics.grid_space import ord_to_grid
 
 class QuantileSum:
     def __init__(self, quant:float):
