@@ -1,19 +1,19 @@
-from sympy import Matrix, eye, MatAdd, Symbol
+from sympy import Matrix, Symbol
 import numpy as np
 import polars as pl
 from numpy.typing import NDArray
 from .meta import SQobjMeta
-from ..operations import ptrace_ix, vgc, ventropy
-from warnings import warn
-from ..operations.density_operations.common_opers import pT_arr
+from .density_operations import ptrace_ix, vgc, ventropy, pT_arr
 import copy
 from IPython.display import display as disp, Markdown as md, Math as mt
 from sympy import kronecker_product as kron
 from torch import Tensor
-from typing import Sequence, Iterable
-import numba as nb
+from typing import Iterable
 from itertools import combinations
-
+class NdSQobj(np.ndarray):
+    def __init__(self, *args):
+        super(NdSQobj,self).__init__()
+        pass
 class SQobj(Matrix):
     def __init__(self, 
                  *args,
@@ -128,7 +128,7 @@ class SQobj(Matrix):
         return SQobj(ptrace_ix(ix_, np.array(self)), meta = self._metadata)
     
     def pidMatrix(self, A:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable, Projs:list[object])->NDArray:
-        if(self._metadata.obj_tp is not 'operator'):
+        if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Not implimented for bra and kets')
         try:
             iter(A)
