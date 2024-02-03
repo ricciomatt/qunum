@@ -80,11 +80,13 @@ class LazyPinnSimDataSet:
                 else:
                     xSim = None 
                     ySim = None
-                    X_ = self.xSampler.rsample(self.Data.batch_size, )
+                    X_ = self.xSampler.rsample(self.Data.batch_size)
             else:
                 xSim, ySim = next(self.C_iter)
                 X_ = self.xSampler.rsample(xSim.shape)
             X_.requires_grad_(self.req_grad)
+            if(xSim is not None):
+                xSim.requires_grad_(self.req_grad)
             return ((xSim, X_), (ySim, None))
         else:
             self.n = 0
