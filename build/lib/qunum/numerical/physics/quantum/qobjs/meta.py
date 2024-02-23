@@ -95,7 +95,17 @@ class QobjMeta:
             raise TypeError('tr_out must be Iterable[int] or int')
         assert self.particle_in(ix_), ValueError('Particle Not found')
         return ix_
-
+    def query_particle_ixs(self, ix:NDArray):
+        a:np.ndarray = vgc(ix)
+        return self.ixs.group_by(
+                pl.col(
+                        a.tolist()
+                    )
+                ).agg(
+                    pl.col('row_nr').implode().alias('ix')
+                ).collect().sort(a)['ix'].to_list()
+    
+    
 class GenQobjMeta:
     def __init__(self, n_particles:int= None,
                  hilbert_space_dims:int = 2, 

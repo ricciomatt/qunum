@@ -29,7 +29,9 @@ def grad_descent(Model:torch.nn.Module,
                 if(prnt_):
                     print(f"{epoch}/{epochs}: Loss={L} {step}/{len(dataLoader)}")
                 L.backward()
-                Optimizer.step()
+                with torch.no_grad():
+                    Optimizer.step()
+                    Optimizer.zero_grad()
                 if(track_metrics):
                     modelTracker(y,yh, L)
                 yh.detach().cpu()

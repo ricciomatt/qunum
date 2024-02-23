@@ -168,6 +168,15 @@ class GradDescentTrain:
     
     def __call__(self, **kwargs:dict[Any])->None:
         return self.train(**kwargs)
+
+    def getModel(self)->Callable:
+        return self.Model
+    
+    def getTrainingStats(self)->ModelTracker:
+        return self.modelTracker    
+    def getDict(self)->dict:
+        return {'Model':self.getModel(), 'modelTracker':self.getTrainingStats(), 'LossFunction':self.Loss}
+
     
     #Loss Stuff
     def eval_loss(self, **kwargs)->Tensor:
@@ -192,9 +201,10 @@ class GradDescentTrain:
         self.Optimizers.zero_grad()
         return self.eval_loss(x = x, y = y)
     
-    #Steps the Parameters for a given optimizer
+    #Steps the= Parameters for a given optimizer
     def step_function(self,x:Tensor|tuple[Tensor, ...],y:Tensor|tuple[Tensor, ...]):
-        self.Optimizers[self.o].step(lambda: self.closure(x,y))
+        with torch.no_grad():
+            self.Optimizers[self.o].step(lambda: self.closure(x,y))
         return
 
     

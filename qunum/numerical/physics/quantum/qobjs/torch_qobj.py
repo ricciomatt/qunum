@@ -187,16 +187,7 @@ class TQobj(Tensor):
                 ix = self._metadata.check_particle_ixs(keep)
             if(ix.shape[0] == self._metadata.n_particles):
                 return self
-            a:np.ndarray = vgc(ix)
-            ix_ =  torch.tensor(
-                self._metadata.ixs.group_by(
-                    pl.col(
-                        a.tolist()
-                        )
-                    ).agg(
-                        pl.col('row_nr').implode().alias('ix')
-                    ).collect().sort(a)['ix'].to_list()
-                )[:,0]
+            ix_ =  torch.tensor(self._metadata.query_particle_ixs(ix))[:,0]
             meta = copy.copy(self._metadata)
             meta.update_dims(ix, reorder=reorder)
         if(self.requires_grad):
@@ -213,16 +204,7 @@ class TQobj(Tensor):
     def pT(self, ix_T:tuple[int]|list[int])->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        a:np.ndarray = vgc(np.array(self._metadata.check_particle_ixs(ix_T), dtype = np.int64))
-        ix_ =  torch.tensor(
-            self._metadata.ixs.groupby(
-                pl.col(
-                    a.tolist()
-                    )
-                ).agg(
-                    pl.col('row_nr').implode().alias('ix')
-                ).collect().sort(a)['ix'].to_list()
-            )[:,0]
+        ix_ =  torch.tensor(self._metadata.query_particle_ixs(ix_))[:,0]
         return TQobj(pT_arr(torch.tensor(self), ix_), meta = self._metadata)
     
     def entropy(self,)->object:

@@ -17,9 +17,9 @@ class PinnMagnusLf:
             H:LazyTimeHamiltonian, 
             get_weigthing:Generator[Tensor, None, None]|None= None, 
             alpha:float = 1e-3, 
-            n_particles:int =  2
+            time_dim :int= 0
         )->None:
-        self.InspiredLoss = SchrodingerEqLossLoss(H, n_particles)
+        self.InspiredLoss = SchrodingerEqLossLoss(H, time_dim=time_dim)
         self.SimulationLoss = ComplexMSE()
         if(get_weigthing is None):
             self.get_weigthing = default_weighting(alpha, ones(2))
@@ -52,6 +52,5 @@ class PinnMagnusLf:
             x:Tensor,
         )->Tensor:
         yh = tuple(map(lambda i: Model.forward(i), x))
-        IL = sum(map(lambda a: self.InspiredLoss(a[0], a[1]), zip(x,yh)))
-        
-        return self.weight[0] * self.SimulationLoss(yh, y, None) + self.weight[1] * IL
+        IL = sum(map(lambda a: self.InspiredLoss(a[0], a[1]), zip(yh, x)))
+        return self.weight[0] * self.SimulationLoss(yh[0], y[0], None) + self.weight[1] * IL

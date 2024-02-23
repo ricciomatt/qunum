@@ -8,7 +8,7 @@ def einsum(indicies:str, *args:Tuple[Tensor|TQobj,...], **kwargs)->TQobj:
     meta = None
     for a in args:
         if(isinstance(a, TQobj)):
-            meta = QobjMeta(hilbert_space_dims= args[0]._metadata.hilbert_space_dims, shp=ret_ten.shape)
+            meta = QobjMeta(n_particles=a._metadata.n_particles, dims=a._metadata.dims, shp=ret_ten.shape)
             break
     assert meta is not None, 'If you are looking to just do a regular einstien summation use torch.einsum(*args) not qn.einsum'
     if(isinstance(ret_ten, TQobj)):

@@ -7,6 +7,7 @@ qunum.egg-info/SOURCES.txt
 qunum.egg-info/dependency_links.txt
 qunum.egg-info/requires.txt
 qunum.egg-info/top_level.txt
+qunum/jupyter_tools/__init__.py
 qunum/numerical/__init__.py
 qunum/numerical/constants/__init__.py
 qunum/numerical/constants/metric.py
@@ -203,8 +204,6 @@ qunum/symbolic/physics/__init__.py
 qunum/symbolic/physics/classical/__init__.py
 qunum/symbolic/physics/quantum/__init__.py
 qunum/symbolic/physics/quantum/operations/__init__.py
-qunum/symbolic/physics/quantum/operations/density_operations/__init__.py
-qunum/symbolic/physics/quantum/operations/density_operations/common_opers.py
 qunum/symbolic/physics/quantum/operations/operators/__init__.py
 qunum/symbolic/physics/quantum/operations/operators/rot.py
 qunum/symbolic/physics/quantum/operations/sqobj_ops/__init__.py
@@ -212,5 +211,7 @@ qunum/symbolic/physics/quantum/operations/sqobj_ops/d_prod_ops.py
 qunum/symbolic/physics/quantum/qobjs/__init__.py
 qunum/symbolic/physics/quantum/qobjs/meta.py
 qunum/symbolic/physics/quantum/qobjs/n_body.py
-qunum/symbolic/physics/quantum/qobjs/opers.py
+qunum/symbolic/physics/quantum/qobjs/nsqobj.py
 qunum/symbolic/physics/quantum/qobjs/sqobj.py
+qunum/symbolic/physics/quantum/qobjs/density_operations/__init__.py
+qunum/symbolic/physics/quantum/qobjs/density_operations/common_opers.py
