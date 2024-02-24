@@ -1,4 +1,4 @@
-from sympy import Matrix, Symbol, kronecker_product as kron
+from sympy import Matrix, Symbol, kronecker_product as kron, log
 from numpy import ndarray
 import numpy as np 
 from typing import Iterable
@@ -95,8 +95,13 @@ class SymbQobj(Matrix):
         elif(self._metadata.obj_tp == 'bra'):
             meta.obj_tp = 'ket'
         return SymbQobj(self.adjoint(), meta= meta)
+    
     def to_density(self)->object:
-        pass
+        if(self._metadata.obj_tp == 'ket'):
+            return self @ self.dag()
+        else:
+            return self.dag() @ self
+    
 
     def Tr(self, tr_out:list[int]|tuple[int]|ndarray|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|ndarray|slice|int|Iterable|None=None, reorder:bool = False)->object:
         if(tr_out is None and keep is None):
@@ -116,12 +121,20 @@ class SymbQobj(Matrix):
             pA = SymbQobj(Matrix().zeros(ix_.shape[0], ix_.shape[0]), meta = meta)
             return ptrace_bwd_ix(ix_, self, pA)
         
-    def pT(self)->object:
-        pass
+    def pT(self, ix_T:tuple[int]|list[int])->object:
+        if(self._metadata.obj_tp != 'operator'):
+            raise TypeError('Must be an operator')
+        ix_T = self._metadata.query_particle_ixs(ix_T)
+        return SymbQobj(pT_arr(np.array(self), ix_T), meta=self._metadata)
+    
     
     def sum(self)->object:
         return super(SymbQobj, self).sum(self) 
     
+    def ventropy(self)->Symbol:
+        return ventropy(Matrix(self))
+    
+
 import numba as nb 
 @nb.jit(forceobj=True)
 def ptrace_bwd_ix(ix:ndarray, p:SymbQobj, pA:SymbQobj)->SymbQobj:
@@ -130,21 +143,7 @@ def ptrace_bwd_ix(ix:ndarray, p:SymbQobj, pA:SymbQobj)->SymbQobj:
             pA[i,j] += p[ix[i], ix[j]].sum()
     return pA
 
-'''
-@torch.jit.script
-def ptrace_bwd_ix(ix:Tensor, p:SymbQobj)->SymbQobj:
-    if(len(p.shape) == 2):
-        pA = torch.zeros((ix.shape[0], ix.shape[0]), dtype = p.dtype, requires_grad=p.requires_grad)
-        for i in range(ix.shape[0]):
-            for j in range(ix.shape[0]):
-                pA[i,j] = p[ix[i], ix[j]].sum()
-    else:
-        pA = torch.zeros((p.shape[0], ix.shape[0], ix.shape[0]), dtype = p.dtype, requires_grad=p.requires_grad)
-        for i in range(ix.shape[0]):
-            for j in range(ix.shape[0]):
-                pA[:, i,j] += p[:, ix[i], ix[j]].sum(dim = [1])
-    return pA
-'''
+
 
 def direct_prod(*args:tuple[SymbQobj])->SymbQobj:
     from string import ascii_uppercase
@@ -160,3 +159,23 @@ def direct_prod(*args:tuple[SymbQobj])->SymbQobj:
     meta = QobjMeta(dims=dims, shp=A.shape)
     return SymbQobj(A, meta = meta)
 
+
+def pT_arr(p:ndarray, ixs:ndarray)->ndarray:
+    k = np.empty_like(p)
+    for i in range(ixs.shape[0]):
+        for j in range(ixs.shape[0]):
+            t = [[t for m in range(ixs.shape[1])]
+                 for t in ixs[i]]
+            l = [ixs[j] for m in range(ixs[j].shape[0])]
+            k[t,l] = (p[t,l].T)
+    return k
+    
+@nb.jit(forceobj=True)
+def ventropy(p:Matrix)->Symbol:
+    ev = p.eigenvals()
+    S = 0
+    for lam in ev:
+        for j in range(ev[lam]):
+            if(lam != 0):
+                S-=lam*log(lam)
+    return S

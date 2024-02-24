@@ -6,4 +6,3 @@ def TeXCode(x)->None:
 def TeXit(x)->None:
     disp(Md(latex(x)))
     return
-

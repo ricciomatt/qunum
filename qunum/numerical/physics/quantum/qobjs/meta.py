@@ -62,6 +62,7 @@ class QobjMeta:
         self.hilbert_space_dims = np.prod(self.dims.values())
         return 
     
+    
     def __repr__(self):
         return self.__str__()
     

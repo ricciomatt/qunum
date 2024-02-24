@@ -232,6 +232,12 @@ class TQobj(Tensor):
             vec[i,:,0] += (s[i] @ p).diagonal(dim1=-2, dim2=-1).sum(dim=-1)
         return vec[:,:,0]
     
+    def to(self, *args, **kwargs)->object:
+        self.device
+        M = super(TQobj, self).to(*args, **kwargs)
+        M.set_meta(self._metadata)
+        return M
+
     def mutual_info(self, A:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable, B:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None = None)->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
