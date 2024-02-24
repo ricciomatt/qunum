@@ -1,5 +1,6 @@
 from IPython.display import display as disp, Markdown as Md, Math as Mt
 from sympy import latex
+from .plotting import *
 def TeXCode(x)->None:
     print(latex(x))
     return 
