@@ -122,6 +122,8 @@ class MeanField:
         disp(md(f'''$$\\mathcal{'{H}'}_{'{1}'} = {latex(Matrix(self.H1.real.detach().numpy())+ I *Matrix(self.H1.imag.detach().numpy()))}$$'''))
         return f'{str(int(self.N))} Particle {str(int(self.flavors))} Flavor, Mean Field Neutrino Hamiltonian. '
 
+    def mu(self, t:Tensor)->Tensor:
+        return  self.mu0*torch.pow(1-torch.sqrt(1-torch.pow(self.Rv/(self.r+self.v*t),2)),2)
 
 def init_psi(n:int, theta:float = np.pi/5)->TQobj:
     b = TQobj(torch.tensor([[1.,0.]], dtype= torch.complex128), n_particles=1, hilbert_space_dims=2)
