@@ -235,8 +235,18 @@ class TQobj(Tensor):
     def to(self, *args, **kwargs)->object:
         self.device
         M = super(TQobj, self).to(*args, **kwargs)
-        M.set_meta(self._metadata)
+        try:
+            M.set_meta(self._metadata)
+        except:
+            try:
+                M = M.to_tensor()
+            except:
+                pass
+            pass
         return M
+    
+    def cpu(self,)->None:
+        return self.to('cpu')
 
     def mutual_info(self, A:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable, B:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None = None)->object:
         if(self._metadata.obj_tp != 'operator'):

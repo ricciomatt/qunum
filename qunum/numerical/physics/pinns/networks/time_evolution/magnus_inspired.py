@@ -6,10 +6,11 @@ from torch.linalg import matrix_exp as expm
 from typing import Callable
 from .....mathematics import einsum
 from .....mathematics.algebra import ad
+from ....quantum import TQobj
 
 class MagnusInspired(Module):
     def __init__(self, 
-                 H:Tensor,
+                 H:TQobj,
                  order:int = 4,
                  )->None:
         super(MagnusInspired, self).__init__()
@@ -37,7 +38,7 @@ class MagnusInspired(Module):
             Linear(128, 48),
             LeLU(),
             
-            Linear(48, self.HBasis.shape[0])
+            Linear(48, self.HBasis.shape[0]),
             
         )
         self.GammaImag = Sequential(
@@ -62,13 +63,13 @@ class MagnusInspired(Module):
             Linear(128, 48),
             LeLU(),
             
-            Linear(48, self.HBasis.shape[0])
+            Linear(48, self.HBasis.shape[0]),
             
         )
         return
     
 
-    def gen_basis(self, H:Tensor, order:int = 4)->Tensor:
+    def gen_basis(self, H:TQobj, order:int = 4)->Tensor:
         L = get_combos(range(H.shape[0]), order)
         t = [H[0], H[1]]
         MX = [torch.max(H.real), torch.max(H.imag)]
@@ -84,7 +85,8 @@ class MagnusInspired(Module):
                 if(mmx[i]>MX[i]):
                     MX[i] = mmx[i]
                 i+=1
-        return torch.stack(t)
+        H = TQobj(torch.stack(t), meta = H._metadata)
+        return H
     
     def updateBasis(self, H)->None:
         self.HBasis = self.gen_basis(H, order=self.order)
@@ -92,7 +94,7 @@ class MagnusInspired(Module):
     
     def to(self, *args:tuple, **kwargs:dict)->None:
         super(MagnusInspired, self).to(*args,**kwargs)
-        self.HBasis.to(*args, **kwargs)
+        self.HBasis = self.HBasis.to(*args, **kwargs)
         return
     
     def cpu(self)->None:
