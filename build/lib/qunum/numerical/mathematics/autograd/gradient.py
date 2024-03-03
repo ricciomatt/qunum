@@ -13,7 +13,10 @@ def Dx(
         allow_unused: bool = True,
         symmetric: bool = False
     )->Tensor|TQobj:
-    if not (y.is_complex()):
+    if not isinstance(y, TQobj):
+        assert isinstance(y,TQobj), 'Not Implemented for just Torch Tensors yet only TQobjs'
+        return None 
+    elif not (y.is_complex()):
         if(y._metadata.obj_tp == 'operator' and symmetric):
             return (
                 TQobj(
@@ -70,7 +73,6 @@ def Dop(
     )->Tensor:
     Op = torch.swapaxes(torch.swapaxes(Op, axis0=0, axis1=-1), axis0=1, axis1=-2)
     G = torch.zeros_like(Op)
-    G.requires_grad_(create_graph)
     grad_outputs: List[Optional[torch.Tensor]] = [ torch.ones_like(Op[0,0]) ]
     for i in range(Op.shape[0]):
         for j in range(i, Op.shape[1]):
@@ -104,7 +106,6 @@ def DGen(
         swap2:Tuple[int, int] = (1, -2)
     V = torch.swapaxes(torch.swapaxes(V, axis0 = swap1[0], axis1 = swap1[1] ), axis0 = swap2[0], axis1 = swap2[1])
     G = torch.zeros_like(V)
-    G.requires_grad_(create_graph)
     grad_outputs: List[Optional[torch.Tensor]] = [ torch.ones_like(V[0,0]) ]
     for i in range(V.shape[0]):
         for j in range(V.shape[1]):
@@ -117,9 +118,8 @@ def DGen(
                 allow_unused=allow_unused,
             )[0]
             if(t is not None):
-                G[i,j] += t[der_dim]
+                G[i,j] = G[i,j] + t[der_dim]
     return torch.swapaxes(torch.swapaxes(G, axis0 = swap2[1], axis1 = swap2[0]), axis0 = swap1[1], axis1 = swap1[0])
-
 
 @jit.script
 def DGenComplex(
@@ -139,7 +139,6 @@ def DGenComplex(
         swap2:Tuple[int, int] = (1, -2)
     V = SW(SW(V, axis0 = swap1[0], axis1 = swap1[1] ), axis0 = swap2[0], axis1 = swap2[1])
     G = torch.zeros_like(V)
-    G.requires_grad_(create_graph)
     grad_outputs: List[Optional[torch.Tensor]] = [ torch.ones_like(V[0,0]).real ]
     for i in range(V.shape[0]):
         for j in range(V.shape[1]):
@@ -160,5 +159,8 @@ def DGenComplex(
                 allow_unused=allow_unused,
             )[0]
             if(tr is not None and ti is not None):
-                G[i,j] += torch.complex(tr[der_dim], ti[der_dim])
+                if(len(x.shape) > 1):
+                    G[i,j] = G[i,j] + torch.complex(tr[:,der_dim].real, ti[:,der_dim].real)
+                else:
+                    G[i,j] = G[i,j] + torch.complex(tr[der_dim].real, ti[der_dim].real)
     return SW(SW(G, axis0 = swap2[1], axis1=swap2[0]), axis0 = swap1[1], axis1 = swap1[0])

@@ -83,3 +83,6 @@ class MeanField:
         disp(md(f'''$$\\mathcal{'{H}'}_{'{0}'} = {latex(Matrix(self.H0.real.detach().numpy())+ I *Matrix(self.H0.imag.detach().numpy()))}$$'''))
         disp(md(f'''$$\\mathcal{'{H}'}_{'{1}'} = {latex(Matrix(self.H1.real.detach().numpy())+ I *Matrix(self.H1.imag.detach().numpy()))}$$'''))
         return f'{str(int(self.N))} Particle {str(int(self.flavors))} Flavor, Mean Field Neutrino Hamiltonian. '
+    
+    def get_mu(self, t:Tensor)->Tensor:
+        return  self.mu0*torch.pow(1-torch.sqrt(1-torch.pow(self.Rv/(self.r0+self.v*t),2)),2)

@@ -1,4 +1,9 @@
 from IPython.display import display as disp, Markdown as Md, Math as Mt
 from sympy import latex
-TeXCode = lambda x: print(latex(x))
-TeXit = lambda x:disp(Md(latex(x)))
+from .plotting import setup_plotly
+def TeXCode(x)->None:
+    print(latex(x))
+    return 
+def TeXit(x)->None:
+    disp(Md(latex(x)))
+    return

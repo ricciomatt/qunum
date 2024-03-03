@@ -8,6 +8,9 @@ qunum.egg-info/dependency_links.txt
 qunum.egg-info/requires.txt
 qunum.egg-info/top_level.txt
 qunum/jupyter_tools/__init__.py
+qunum/jupyter_tools/plotting/__init__.py
+qunum/jupyter_tools/plotting/engine.py
+qunum/jupyter_tools/plotting/setup.py
 qunum/numerical/__init__.py
 qunum/numerical/constants/__init__.py
 qunum/numerical/constants/metric.py
@@ -60,7 +63,10 @@ qunum/numerical/physics/pinns/loss_functions/inspired/non_relatavistic.py
 qunum/numerical/physics/pinns/loss_functions/inspired/schrodinger.py
 qunum/numerical/physics/pinns/loss_functions/std/__init__.py
 qunum/numerical/physics/pinns/networks/__init__.py
-qunum/numerical/physics/pinns/networks/nuetrino.py
+qunum/numerical/physics/pinns/networks/time_evolution/__init__.py
+qunum/numerical/physics/pinns/networks/time_evolution/magnus_inspired.py
+qunum/numerical/physics/pinns/networks/time_evolution/path_integral_inspired/__init__.py
+qunum/numerical/physics/pinns/networks/time_evolution/path_integral_inspired/stochastic.py
 qunum/numerical/physics/quantum/__init__.py
 qunum/numerical/physics/quantum/operators/__init__.py
 qunum/numerical/physics/quantum/operators/dir_prod.py
