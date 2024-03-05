@@ -46,7 +46,7 @@ H = 1j * qn.Dx(Psi, t, der_dim = 0)
 ```
 
 #### Time Evolution
-$H = (S_{x}\otimes S_{x})B_{x}$
+$H = (S_{x}\otimes S_{x})B_{x} + (S_{y} \otimes S_{y})B_{y}$
 ```
 import torch as torch
 from qunum import qunum as qn
