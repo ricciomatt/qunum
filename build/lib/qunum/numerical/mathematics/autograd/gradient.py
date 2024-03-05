@@ -162,5 +162,5 @@ def DGenComplex(
                 if(len(x.shape) > 1):
                     G[i,j] = G[i,j] + torch.complex(tr[:,der_dim].real, ti[:,der_dim].real)
                 else:
-                    G[i,j] = G[i,j] + torch.complex(tr[der_dim].real, ti[der_dim].real)
+                    G[i,j] = G[i,j] + torch.complex(tr.real, ti.real)
     return SW(SW(G, axis0 = swap2[1], axis1=swap2[0]), axis0 = swap1[1], axis1 = swap1[0])

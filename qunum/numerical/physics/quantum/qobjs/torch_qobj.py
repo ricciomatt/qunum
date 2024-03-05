@@ -84,7 +84,7 @@ class TQobj(Tensor):
     
     def abs_sqr(self)->object:
         return self.conj()*self
-    
+
     def conj(self)->object:
         a = super(TQobj, self).conj()
         a.set_meta(self._metadata)
@@ -379,7 +379,7 @@ class TQobj(Tensor):
             raise TypeError('Must Be operator type with multiple entries rank(3)')
         return TQobj(cummatprod_(self.to_tensor()), meta = self._metadata)
         
-    def get_systems(self, A):
+    def get_systems(self, A:Iterable[int]|int)->Iterable[int]:
         combs = []
         ix = np.arange(self._metadata.n_particles)
         ix = np.delete(ix, A)
@@ -406,7 +406,7 @@ class TQobj(Tensor):
         else:
             return self @ O.dag()
     
-    def __getitem__(self, index):
+    def __getitem__(self, index)->object:
         item = super(TQobj, self).__getitem__(index)
         try:
             item._metadata = self._metadata
@@ -414,10 +414,22 @@ class TQobj(Tensor):
             pass
         return item
     
-    def sum(self, **kwargs):
+    def sum(self, **kwargs)->object:
         M = super(TQobj, self).sum(**kwargs)
-        M.set_meta(self._metadata)
-        M._metadata.shp = M.shape
+        try:
+            M.set_meta(self._metadata)
+            M._metadata.shp = M.shape
+        except:
+            pass
+        return M
+    
+    def cumsum(self, **kwargs)->object:
+        M = super(TQobj, self).cumsum(**kwargs)
+        try:
+            M.set_meta(self._metadata)
+            M._metadata.shp = M.shape
+        except:
+            pass
         return M
     
 class TQobjEvo(Tensor):
