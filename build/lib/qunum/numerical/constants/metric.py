@@ -17,6 +17,8 @@ R_inf = ((alpha**2)*me*c)/(2*h_bar)
 R_K = h/qe**2
 KJ = (2*qe)/h
 Solar_Mass = 2e30
+a0 = 5.29e-11
+a0_calc = h_bar/(me*c_exact*alpha)
 
 '''Mass Parameters Standard'''
 def get_sm():

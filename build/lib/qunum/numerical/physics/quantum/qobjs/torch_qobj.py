@@ -34,8 +34,14 @@ class TQobj(Tensor):
                 kwargs['requires_grad'] = data.requires_grad
             except:
                 kwargs['requires_grad'] = False
+    
         if(isinstance(data, np.ndarray)):
             data = torch.from_numpy(data, *args, dtype=dtype, **kwargs)
+        elif(isinstance(data, list)):
+            try:
+                data = torch.tensor(data, dtype = dtype)
+            except Exception as E:
+                raise TypeError(E)
         assert isinstance(data, Tensor), TypeError('Must be Numpy Array or Tensor Type')
         obj = super(TQobj, cls).__new__(cls, data)
         return obj
@@ -76,6 +82,19 @@ class TQobj(Tensor):
         
         return 
     
+    def abs_sqr(self)->object:
+        return self.conj()*self
+    
+    def conj(self)->object:
+        a = super(TQobj, self).conj()
+        a.set_meta(self._metadata)
+        return a
+    
+    def clone(self)->object:
+        a = super(TQobj, self).clone()
+        a.set_meta(self._metadata)
+        return
+
     def __matmul__(self, O:object|Tensor)->object:
         if not (isinstance(O, TQobj) or isinstance(O,Tensor)):
             raise TypeError('Must Be TQobj or Tensor')
@@ -85,17 +104,26 @@ class TQobj(Tensor):
     
     def __mul__(self, O:object|Tensor|float|int)->object:
         M = super(TQobj, self).__mul__(O)
-        M.set_meta(meta = self._metadata)
+        try:
+            M.set_meta(meta = self._metadata)
+        except:
+            pass
         return M
     
     def __add__(self, O:object|Tensor|float|int)->object:
         M = super(TQobj, self).__add__(O)
-        M.set_meta(meta =self._metadata)
+        try:
+            M.set_meta(meta = self._metadata)
+        except:
+            pass
         return M
     
     def __sub__(self, O:object|Tensor|float|int)->object:
         M = super(TQobj, self).__sub__(O)
-        M.set_meta(meta= self._metadata)
+        try:
+            M.set_meta(meta = self._metadata)
+        except:
+            pass
         return M
     
     def __radd__(self, O:object|Tensor)->object:
