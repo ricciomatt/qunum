@@ -195,8 +195,18 @@ class TQobj(Tensor):
         return M
 
     def logm(self)->object:
-        return TQobj(logm(self.detach().numpy()), meta = self._metadata)
+        l, P = torch.linalg.eig(self.to_tensor())
+        D = torch.zeros_like(self)
+        PI = torch.linalg.inv(P)
+        D[..., torch.arange(self.shape[-1]), torch.arange(self.shape[-1])] = torch.log(l).squeeze()
+        return TQobj(P @ D @ PI, meta = self._metadata)
     
+    def eig(self, eigenvectors:bool = False)->tuple[Tensor, object]:
+        l, P = torch.linalg.eig(self, eigenvectors=eigenvectors)
+        P.set_meta(self._metadata)
+        return l, P
+        
+
     def to_tensor(self, detach=True)->Tensor:
         if(detach or self.requires_grad == False):
             return torch.from_numpy(self.data.detach().numpy())
@@ -235,9 +245,10 @@ class TQobj(Tensor):
         ix_ =  torch.tensor(self._metadata.query_particle_ixs(ix_))[:,0]
         return TQobj(pT_arr(torch.tensor(self), ix_), meta = self._metadata)
     
-    def entropy(self,)->object:
+    def entropy(self, tp_calc:str ='von')->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
+        entropy_map = {'von':ventropy, 'reyni':None}
         return ventropy(self)
     
     def polarization_vector(self, particle:int)->torch.Tensor:
