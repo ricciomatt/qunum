@@ -245,11 +245,18 @@ class TQobj(Tensor):
         ix_ =  torch.tensor(self._metadata.query_particle_ixs(ix_))[:,0]
         return TQobj(pT_arr(torch.tensor(self), ix_), meta = self._metadata)
     
-    def entropy(self, tp_calc:str ='von')->object:
+    def entropy(self, tp_calc:str ='von', n_reyni:int = 2, von_epsi:float = 1e-8, **kwargs)->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        entropy_map = {'von':ventropy, 'reyni':None}
-        return ventropy(self)
+        entropy_map = {'von':ventropy, 'reyni':reyni_entropy}
+        if(tp_calc not in entropy_map):
+            return ventropy(self, epsi=von_epsi)
+        else:
+            if(tp_calc == 'von'):
+                return entropy_map[tp_calc](self,epsi=von_epsi)
+            else:
+                return entropy_map[tp_calc](self,n=n_reyni)
+            
     
     def polarization_vector(self, particle:int)->torch.Tensor:
         from ....mathematics.algebra.representations import su
@@ -442,6 +449,10 @@ class TQobj(Tensor):
         except:
             pass
         return M
+    def mat_pow(self, n:int)->object:
+        M = torch.linalg.matrix_power(self, n)
+        M.set_meta(self._metadata)
+        return M
     
 class TQobjEvo(Tensor):
     def __new__(cls, 
@@ -523,3 +534,9 @@ def direct_prod(*args:tuple[TQobj])->TQobj:
         dims.update(tdims)
     meta = QobjMeta(dims=dims, shp=A.shape)
     return TQobj(A, meta = meta)
+
+
+@torch.jit.script
+def reyni_entropy(p:TQobj, n:int=2)->TQobj:
+    pn = p.mat_pow(n).Tr()
+    return (1/(1-n))*torch.log(pn)
