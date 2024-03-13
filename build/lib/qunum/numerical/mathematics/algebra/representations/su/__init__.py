@@ -1,6 +1,7 @@
 import numpy as np
 from torch import from_numpy as tensor, ComplexType
 from numpy.typing import NDArray
+from .tensor_product_space import get_J
 
 def get_pauli(to_tensor:bool= False, include_identity:bool=True, dtype = np.complex128)->NDArray[np.complex64|np.complex128]|ComplexType:
     if(include_identity):

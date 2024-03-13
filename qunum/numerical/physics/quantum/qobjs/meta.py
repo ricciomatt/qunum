@@ -13,7 +13,9 @@ class QobjMeta:
                  hilbert_space_dims:int = 2, 
                  shp:tuple[int] = None, 
                  dims:None|dict[int:int] = None,
-                 check_hermitian:bool = False,)->None:
+                 check_hermitian:bool = False,
+                 is_sparse:bool = False
+                 )->None:
         if(shp[-1] == 1  and shp[-2] == 1):
             self.obj_tp = 'scaler'
             l = 1
@@ -27,7 +29,7 @@ class QobjMeta:
             self.obj_tp = 'ket'
             l = shp[-2]
         else:
-            print(shp)
+            raise ValueError(str(shp) + 'Is not a valid shape')
         self.shp = shp
         if(check_hermitian):
             self.check_hermitian = check_hermitian
@@ -48,6 +50,10 @@ class QobjMeta:
             self.ixs = pl.LazyFrame(itertools.product(*[range(dims[x]) for x in dims])).with_row_count()
         else:
             self.ixs = None
+        self.eigenBasis = None 
+        self.eigenVals = None
+        self.is_sparse = is_sparse
+        
         return
     
     def update_dims(self, keep_ixs:Iterable, reorder:bool = False)->None:
@@ -62,7 +68,10 @@ class QobjMeta:
         self.hilbert_space_dims = np.prod(self.dims.values())
         return 
     
-    
+    def _reset_(self):
+        self.eigenBasis = None
+        self.eigenVals = None 
+        return
     def __repr__(self):
         return self.__str__()
     

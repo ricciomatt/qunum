@@ -16,6 +16,8 @@ import numba as nb
 from itertools import combinations, product
 from scipy.linalg import logm
 
+
+
 '''Need to Fix the Gradient Function'''
 class TQobj(Tensor):
     def __new__(cls, 
@@ -34,15 +36,21 @@ class TQobj(Tensor):
                 kwargs['requires_grad'] = data.requires_grad
             except:
                 kwargs['requires_grad'] = False
-    
+
         if(isinstance(data, np.ndarray)):
             data = torch.from_numpy(data, *args, dtype=dtype, **kwargs)
+        
         elif(isinstance(data, list)):
             try:
                 data = torch.tensor(data, dtype = dtype)
             except Exception as E:
                 raise TypeError(E)
+        elif(data.dtype != dtype):
+            data = data.to(dtype)
         assert isinstance(data, Tensor), TypeError('Must be Numpy Array or Tensor Type')
+        if(sparsify):
+            pass
+            #data.to_sparse()
         obj = super(TQobj, cls).__new__(cls, data)
         return obj
     
@@ -53,11 +61,10 @@ class TQobj(Tensor):
                  n_particles:int|None = 1, 
                  hilbert_space_dims:int= 2,
                  dims:None|dict[str:int] = None,
-                 sparsify:bool = True,
+                 sparsify:bool = False,
                  **kwargs)->object:
         super(TQobj, self).__init__()
         self.set_meta(meta=meta, n_particles=n_particles,hilbert_space_dims=hilbert_space_dims, dims=dims, sparsify=sparsify)
-       
         if(self.requires_grad):
             self.retain_grad()
         #if(sparsify):
@@ -78,8 +85,8 @@ class TQobj(Tensor):
                 shp = self.shape
              )
         else:
+            meta._reset_()
             self._metadata = meta
-        
         return 
     
     def abs_sqr(self)->object:
@@ -90,10 +97,18 @@ class TQobj(Tensor):
         a.set_meta(self._metadata)
         return a
     
+    def diagonalize(self, full_inversion:bool = False)->object:
+        if(self._metadata.eigenBasis is None):
+            self._metadata.eigenVals, self._metadata.eigenBasis = torch.linalg.eig(self)
+        if(full_inversion):
+            return self._metadata.eigenBasis @ self @ torch.linalg.inv(self._metadata.eigenBasis)
+        else:
+            return self._metadata.eigenBasis @ self  @ self._metadata.eigenBasis.conj().T
+
     def clone(self)->object:
         a = super(TQobj, self).clone()
         a.set_meta(self._metadata)
-        return
+        return a
 
     def __matmul__(self, O:object|Tensor)->object:
         if not (isinstance(O, TQobj) or isinstance(O,Tensor)):
@@ -194,12 +209,45 @@ class TQobj(Tensor):
         M.set_meta(meta = self._metadata)
         return M
 
-    def logm(self)->object:
-        return TQobj(logm(self.detach().numpy()), meta = self._metadata)
+    def logm(self, invert_:bool = False)->object:
+        l, P = self.eig()
+        D = torch.zeros_like(self)
+        if(invert_):
+            m = P._metadata
+            PI = TQobj(torch.linalg.inv(P.to_tensor()), meta=m)
+        PI = P.dag()
+        D[..., torch.arange(self.shape[-1]), torch.arange(self.shape[-1])] = torch.log(l).squeeze()
+        return (P @ TQobj(D,meta = self._metadata) @ PI)
     
+    def eig(self, eigenvectors:bool = True, save:bool = False, recompute:bool = True)->tuple[Tensor, object]:
+        if(eigenvectors):
+            if(self._metadata.eigenBasis is None or recompute):
+                l, P = torch.linalg.eig(self.to_tensor())
+                if(save):
+                    self._metadata.eigenVals,self._metadata.eigenBasis  = l.to_sparse(), P.to_sparse()
+                P = TQobj(P,meta = self._metadata)
+            else:
+                l,P = self._metadata.eigenVals.to_dense(), self._metadata.eigenBasis.to_dense()
+                P = TQobj(P, meta = self._metadata)
+            return l, P
+        else:
+            if(self._metadata.eigenVals is None or recompute):
+                l = torch.linalg.eigvals(self.to_tensor())
+                if(save):
+                    self._metadata.eigenVals = l
+                P = TQobj(P,meta = self._metadata)
+            else:
+                l,P = self._metadata.eigenVals.to_dense(), self._metadata.eigenBasis.to_dense()
+                P = TQobj(P, meta = self._metadata)
+            return l, P
+        
+
     def to_tensor(self, detach=True)->Tensor:
         if(detach or self.requires_grad == False):
-            return torch.from_numpy(self.data.detach().numpy())
+            try:
+                return torch.from_numpy(self.data.detach().numpy())
+            except:
+                return torch.from_numpy(self.data.detach().resolve_conj().numpy())
     
     def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, reorder:bool = False):
         if(self._metadata.obj_tp != 'operator'):
@@ -235,16 +283,23 @@ class TQobj(Tensor):
         ix_ =  torch.tensor(self._metadata.query_particle_ixs(ix_))[:,0]
         return TQobj(pT_arr(torch.tensor(self), ix_), meta = self._metadata)
     
-    def entropy(self,)->object:
+    def entropy(self, tp_calc:str ='von', n_reyni:int = 2, von_epsi:float = 1e-8, **kwargs)->object:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
-        return ventropy(self)
+        entropy_map = {'von':ventropy, 'reyni':reyni_entropy}
+        if(tp_calc not in entropy_map):
+            return ventropy(self, epsi=von_epsi)
+        else:
+            if(tp_calc == 'von'):
+                return entropy_map[tp_calc](self,epsi=von_epsi)
+            else:
+                return entropy_map[tp_calc](self,n=n_reyni)
+            
     
     def polarization_vector(self, particle:int)->torch.Tensor:
         from ....mathematics.algebra.representations import su
         assert self._metadata.obj_tp == 'operator', TypeError('Must be an operator')
         assert self._metadata.dims[particle] == 2, ValueError('PVec Support Limited to only the SU(2) case for now')
-
         p = self.Tr(keep=particle).to_tensor()
         s = su.get_pauli(to_tensor= True).to(self.dtype)
         shp = self.shape
@@ -431,6 +486,10 @@ class TQobj(Tensor):
         except:
             pass
         return M
+    def mat_pow(self, n:int)->object:
+        M = torch.linalg.matrix_power(self, n)
+        M.set_meta(self._metadata)
+        return M
     
 class TQobjEvo(Tensor):
     def __new__(cls, 
@@ -512,3 +571,10 @@ def direct_prod(*args:tuple[TQobj])->TQobj:
         dims.update(tdims)
     meta = QobjMeta(dims=dims, shp=A.shape)
     return TQobj(A, meta = meta)
+
+
+#@torch.jit.script
+def reyni_entropy(p:TQobj, n:int=2)->TQobj:
+    pn = p.mat_pow(n).Tr()
+    return (1/(1-n))*torch.log(pn)
+

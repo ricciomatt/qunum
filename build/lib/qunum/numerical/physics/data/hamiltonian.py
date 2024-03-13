@@ -9,6 +9,12 @@ class LazyHamiltonian:
         
         pass
 
+class LazySpatialHamiltonian:
+    def __init__(self, x_generator:torch.distributions.Distribution, Hamiltonian:Callable, require_grad:bool = False)->None:
+        self.x_gen = x_generator
+        self.HEval = Hamiltonian
+        return 
+    
 class LazyTimeHamiltonian:
     def __init__(self, 
                  hamiltonain:Callable = None,

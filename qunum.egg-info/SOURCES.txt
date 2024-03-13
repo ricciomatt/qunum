@@ -23,8 +23,10 @@ qunum/numerical/mathematics/algebra/lie/__init__.py
 qunum/numerical/mathematics/algebra/lie/magnus.py
 qunum/numerical/mathematics/algebra/representations/__init__.py
 qunum/numerical/mathematics/algebra/representations/su/__init__.py
+qunum/numerical/mathematics/algebra/representations/su/tensor_product_space.py
 qunum/numerical/mathematics/autograd/__init__.py
 qunum/numerical/mathematics/autograd/gradient.py
+qunum/numerical/mathematics/random/__init__.py
 qunum/numerical/numerics/__init__.py
 qunum/numerical/numerics/grid_space.py
 qunum/numerical/numerics/integrators_.py
@@ -85,6 +87,7 @@ qunum/numerical/physics/quantum/qcomp/algorithms/__init__.py
 qunum/numerical/physics/quantum/qcomp/algorithms/grover.py
 qunum/numerical/physics/quantum/qobjs/__init__.py
 qunum/numerical/physics/quantum/qobjs/meta.py
+qunum/numerical/physics/quantum/qobjs/sparse_qobj.py
 qunum/numerical/physics/quantum/qobjs/torch_qobj.py
 qunum/numerical/physics/quantum/qobjs/density_operations/__init__.py
 qunum/numerical/physics/quantum/qobjs/density_operations/entropy.py
