@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor
-class SparseQobj:
-    def __init__(self, data:Tensor):
+from .meta import QobjMeta
+class SparseTQobj:
+    def __init__(self, data:Tensor, meta:QobjMeta):
         self.data = data.to_sparse()
-
         pass

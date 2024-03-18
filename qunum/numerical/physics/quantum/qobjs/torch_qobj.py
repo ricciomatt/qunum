@@ -245,9 +245,9 @@ class TQobj(Tensor):
     def to_tensor(self, detach=True)->Tensor:
         if(detach or self.requires_grad == False):
             try:
-                return torch.from_numpy(self.data.detach().numpy())
+                return torch.from_numpy(self.data.detach().numpy()).to(self.dtype)
             except:
-                return torch.from_numpy(self.data.detach().resolve_conj().numpy())
+                return torch.from_numpy(self.data.detach().resolve_conj().numpy()).to(self.dtype)
     
     def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, reorder:bool = False):
         if(self._metadata.obj_tp != 'operator'):
@@ -300,7 +300,7 @@ class TQobj(Tensor):
         from ....mathematics.algebra.representations import su
         assert self._metadata.obj_tp == 'operator', TypeError('Must be an operator')
         assert self._metadata.dims[particle] == 2, ValueError('PVec Support Limited to only the SU(2) case for now')
-        p = self.Tr(keep=particle).to_tensor()
+        p = self.Tr(keep=particle).to_tensor().to(self.dtype)
         s = su.get_pauli(to_tensor= True).to(self.dtype)
         shp = self.shape
         if(len(shp)>3):
