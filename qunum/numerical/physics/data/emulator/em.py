@@ -4,6 +4,7 @@ from torch import Tensor, Size
 from typing import Tuple, Iterable
 import numpy as np 
 from torch import empty_like
+from ....seml.distributions import SquareNormal
 def pinn_sim_data_loader(
         xSim:Tensor,
         ySim:Tensor, 
@@ -23,13 +24,6 @@ def pinn_sim_data_loader(
         req_grad= requires_grad,
     )
 
-
-class SquareNornal(Normal):
-    def __init__(self, *args, **kwargs):
-        super(SquareNornal, self).__init__(*args, **kwargs)
-        
-    def rsample(self, n_sample:Size|tuple[int,...])->Tensor:
-        return super(SquareNornal, self).rsample(n_sample)**2
 
 
 class PinnDataSet(Dataset):
@@ -54,7 +48,7 @@ class LazyPinnSimDataSet:
     def __init__(self,
                  Data:DataLoader,
                  turnSim:None|int = None,
-                 xSampler:Distribution = SquareNornal(0, .1),
+                 xSampler:Distribution = SquareNormal(0, .1),
                  req_grad:bool = False):
         self.Data = Data
         self.xSampler = xSampler

@@ -1,7 +1,6 @@
 import numpy as np
 from torch import from_numpy as tensor, ComplexType
 from numpy.typing import NDArray
-from .tensor_product_space import getJ, get_Jrepeat
 
 def get_pauli(to_tensor:bool= False, include_identity:bool=True, dtype = np.complex128)->NDArray[np.complex64|np.complex128]|ComplexType:
     if(include_identity):
@@ -26,11 +25,6 @@ def get_pauli(to_tensor:bool= False, include_identity:bool=True, dtype = np.comp
     else:
         return sigma
     
-def su2_creation_and_annihlation(to_tensor = True)->NDArray[np.complex64]|ComplexType:
-    s = get_pauli(to_tensor=to_tensor)
-    a_c = .5*(s[1]+complex(0,1)*s[2] )
-    a_a = .5*(s[1] - complex(0,1)*s[2])
-    return a_c, a_a
 
 def get_gellmann(to_tensor:bool = False, include_identity:bool= True)->NDArray[np.complex64]|ComplexType:
     if(include_identity):

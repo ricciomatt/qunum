@@ -1,6 +1,6 @@
 import torch 
 from torch import Tensor
-from ...data import DataLoader, LazyLattice
+from ...data import DataLoader
 from ...metrics.numerical import ModelTracker
 from tqdm import tqdm
 from typing import Callable, Any
@@ -12,8 +12,6 @@ class PhysicsDataGenerator:
     def __init__(self) -> None:
         pass
 
-
-#Needs Work
 class GradDescentTrain:
     def __init__(self, 
                  Model:torch.nn.Module,
@@ -26,11 +24,12 @@ class GradDescentTrain:
                  prnt_:bool=False,
                  prntFreq:int = 100,
                  modelTracker:ModelTracker|None=None,
-                 dataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None,
-                 dataLoaderValid:DataLoader|LazyLattice|PhysicsDataGenerator|None = None,
+                 dataLoader:DataLoader|PhysicsDataGenerator|None = None,
+                 dataLoaderValid:DataLoader|PhysicsDataGenerator|None = None,
                  validationUpdate:Callable|None = None,
                  loss_args:tuple[str] = None
                  )->None:
+        
         #Model and Loss stuff
         self.Model = Model
         self.Loss = Loss
@@ -48,7 +47,6 @@ class GradDescentTrain:
         self.epochs = epochs
         self.batch_steps = batch_steps
         self.device = device
-        self.modelTracker = modelTracker
         
         #initialization
         self.tot_epochs = 0
@@ -62,24 +60,43 @@ class GradDescentTrain:
         self.track = bool(modelTracker is None)
         self.validate = bool(validationUpdate is not None)
         
-        if(loss_args is None): 
-            self.loss_args = ('yh', 'y')
+        if(loss_args is not None): 
+            self.loss_args = loss_args
         else: 
             from inspect import getfullargspec
             args_map = {'input':'yh', 'target':'y'}
-            self.loss_args = (
-                A 
-                    if(A not in args_map) 
-                    else 
-                args_map[A] 
-                for 
-                    A in getfullargspec(self.Loss.forward).args
-                    if 
-                        A != 'self'
-            )
-        if(is_iterable(Optimizers)): self.Optimizers = Optimizers
-        else: self.Optimizers = (Optimizers,)
-        
+            try:
+                self.loss_args = (
+                    A 
+                        if(A not in args_map) 
+                        else 
+                    args_map[A] 
+                    for 
+                        A in getfullargspec(self.Loss.forward).args
+                        if 
+                            A != 'self'
+                )
+            except:
+                
+                self.loss_args = (
+                    A 
+                        if(A not in args_map) 
+                        else 
+                    args_map[A] 
+                    for 
+                        A in getfullargspec(self.Loss).args
+                        if 
+                            A != 'self'
+                )
+        if(is_iterable(Optimizers)): 
+            self.Optimizers = Optimizers
+        else: 
+            self.Optimizers = (Optimizers,)
+        if(modelTracker is not None):
+            self.modelTracker = modelTracker
+        else:
+            self.modelTracker = ModelTracker({}, track_loss=True)
+        print(self.modelTracker)
         return 
     
     def reset_iterator(self):
@@ -92,7 +109,7 @@ class GradDescentTrain:
     def __iter__(self):
         return self
     
-    def set_dataLoader(self, TrainDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None)->None:
+    def set_dataLoader(self, TrainDataLoader:DataLoader|PhysicsDataGenerator|None)->None:
         if(TrainDataLoader is None and self.dataLoader is None):
             raise ValueError('Setting None to None')
         self.dataLoader = TrainDataLoader
@@ -133,16 +150,22 @@ class GradDescentTrain:
     def do_batch(self)->None:
         for step, (x,y) in enumerate(self.dataLoader):
             x = x.to(self.device)
-            y = y.to(self.device)
+            if(y is not None):
+                y = y.to(self.device)
             for i in range(self.batch_steps):
                 self.step_function(x,y)
-            x.cpu(); y.cpu()
+            x.cpu()
+            if(y is not None):
+                y.cpu()
             del x; del y
         return
     
-    def train(self, *args, TrainDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None, 
-              ValidationDataLoader:DataLoader|LazyLattice|PhysicsDataGenerator|None = None, 
+    def train(self, 
+              *args, 
+              TrainDataLoader:DataLoader|PhysicsDataGenerator|None = None, 
+              ValidationDataLoader:DataLoader|PhysicsDataGenerator|None = None, 
               dropdataLoader:bool= False, 
+              epochs:int|None = None,
               **kwargs:dict[Any])->None:
         self.Model.to(self.device)
         if(self.dataLoader is None):
@@ -157,6 +180,9 @@ class GradDescentTrain:
             self.dataLodaerValid = ValidationDataLoader
         elif(len(args)>1):
             self.dataLodaerValid = args[1]
+        if(epochs is not None):
+            self.epochs = epochs
+        self.reset_iterator()
         for i,j in tqdm(enumerate(self)):
             pass
         self.reset_iterator()
@@ -173,7 +199,8 @@ class GradDescentTrain:
         return self.Model
     
     def getTrainingStats(self)->ModelTracker:
-        return self.modelTracker    
+        return self.modelTracker   
+     
     def getDict(self)->dict:
         return {'Model':self.getModel(), 'modelTracker':self.getTrainingStats(), 'LossFunction':self.Loss}
 
@@ -190,27 +217,32 @@ class GradDescentTrain:
             L = A[0]
             yh = A[1]
         else:
-            L = A[0]
-            yh = kwargs['yh']
+            L = A
+            try:
+                yh = kwargs['yh']
+            except:
+                yh = None
         if(self.track):
             self.modelTracker(kwargs['y'],  yh, L)
         return L
     
     
     def closure(self, x:Tensor, y:Tensor)->Tensor:
-        self.Optimizers.zero_grad()
+        self.Optimizers[self.o].zero_grad()
         return self.eval_loss(x = x, y = y)
     
     #Steps the= Parameters for a given optimizer
     def step_function(self,x:Tensor|tuple[Tensor, ...],y:Tensor|tuple[Tensor, ...]):
+        L = self.eval_loss(x = x, y = y)
+        L.backward()
         with torch.no_grad():
-            self.Optimizers[self.o].step(lambda: self.closure(x,y))
+            self.Optimizers[self.o].step()
+            self.Optimizers[self.o].zero_grad()
         return
-
     
-def is_iterable(obj):
+def is_iterable(O):
     try:
-        iter(obj)
+        iter(O)
         return True
     except:
-        return False 
+        return False

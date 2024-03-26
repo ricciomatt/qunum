@@ -4,9 +4,6 @@ import torch
 class ModelTracker:
     def __init__(self,
                  functions:dict[str:Callable],
-                 epochs:int,
-                 batches:int,
-                 batch_steps:int,
                  track_loss:bool=True,
                  )->None:
         if(track_loss):

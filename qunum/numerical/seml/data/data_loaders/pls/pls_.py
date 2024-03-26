@@ -38,7 +38,6 @@ class LazyPolarsDs(Dataset):
         return 
     
     def __getitem__(self, ix:int)->tuple[Tensor, Tensor]:
-        print(ix)
         t = pl.DataFrame(self.pipe(self.df.filter(pl.col('row_nr')==ix).fetch(1)))
         return (
                     from_numpy(t[self.x_cols].to_arrow().to_numpy()), 

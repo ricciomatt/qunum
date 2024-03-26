@@ -10,9 +10,14 @@ def anti_commutator(A:torch.Tensor|NDArray, B:torch.Tensor|NDArray)->torch.Tenso
 
 def dexp(A):
     pass
+
 @torch.jit.script
 def tensor_commutator(A:torch.Tensor, B:torch.Tensor)->torch.Tensor:
     return A @ B - B @ A
+
+@torch.jit.script
+def tensor_anticommutator(A:torch.Tensor, B:torch.Tensor)->torch.Tensor:
+    return A @ B + B @ A
 
 @torch.jit.script
 def ad(A:torch.Tensor, B:torch.Tensor, k:int = 1)->torch.Tensor:
@@ -20,4 +25,10 @@ def ad(A:torch.Tensor, B:torch.Tensor, k:int = 1)->torch.Tensor:
         t = B.clone()
         B = tensor_commutator(A,t)
     return B
-    
+
+@torch.jit.script
+def anti_ad(A:torch.Tensor, B:torch.Tensor, k:int = 1)->torch.Tensor:
+    for i in range(k):
+        t = B.clone()
+        B = tensor_anticommutator(A,t)
+    return B

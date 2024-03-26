@@ -22,8 +22,9 @@ qunum/numerical/mathematics/algebra/__init__.py
 qunum/numerical/mathematics/algebra/lie/__init__.py
 qunum/numerical/mathematics/algebra/lie/magnus.py
 qunum/numerical/mathematics/algebra/representations/__init__.py
+qunum/numerical/mathematics/algebra/representations/many_body/__init__.py
+qunum/numerical/mathematics/algebra/representations/many_body/tensor_product_space.py
 qunum/numerical/mathematics/algebra/representations/su/__init__.py
-qunum/numerical/mathematics/algebra/representations/su/tensor_product_space.py
 qunum/numerical/mathematics/autograd/__init__.py
 qunum/numerical/mathematics/autograd/grad_qobj.py
 qunum/numerical/mathematics/autograd/grad_ten.py
@@ -69,6 +70,8 @@ qunum/numerical/physics/quantum/__init__.py
 qunum/numerical/physics/quantum/operators/__init__.py
 qunum/numerical/physics/quantum/operators/dir_prod.py
 qunum/numerical/physics/quantum/operators/general_operators/__init__.py
+qunum/numerical/physics/quantum/operators/general_operators/ladder/__init__.py
+qunum/numerical/physics/quantum/operators/general_operators/ladder/opers.py
 qunum/numerical/physics/quantum/operators/general_operators/rotations/__init__.py
 qunum/numerical/physics/quantum/operators/general_operators/rotations/su.py
 qunum/numerical/physics/quantum/operators/hamiltonians/__init__.py
@@ -95,8 +98,9 @@ qunum/numerical/physics/quantum/qobjs/density_operations/standard.py
 qunum/numerical/seml/__init__.py
 qunum/numerical/seml/data/__init__.py
 qunum/numerical/seml/data/data_loaders/__init__.py
-qunum/numerical/seml/data/data_loaders/lazy.py
 qunum/numerical/seml/data/data_loaders/standard.py
+qunum/numerical/seml/data/data_loaders/lazy/__init__.py
+qunum/numerical/seml/data/data_loaders/lazy/sampler.py
 qunum/numerical/seml/data/data_loaders/pls/__init__.py
 qunum/numerical/seml/data/data_loaders/pls/pls_.py
 qunum/numerical/seml/data/data_splitters/__init__.py
@@ -117,6 +121,9 @@ qunum/numerical/seml/data/preprocessing/scaling/pds/__init__.py
 qunum/numerical/seml/data/preprocessing/scaling/pds/norm_scalers.py
 qunum/numerical/seml/data/preprocessing/scaling/pls/__init__.py
 qunum/numerical/seml/data/preprocessing/scaling/pls/norm_scalar.py
+qunum/numerical/seml/distributions/__init__.py
+qunum/numerical/seml/distributions/normal/__init__.py
+qunum/numerical/seml/distributions/normal/positive_def.py
 qunum/numerical/seml/fitting_algos/__init__.py
 qunum/numerical/seml/fitting_algos/grad_descent/__init__.py
 qunum/numerical/seml/fitting_algos/grad_descent/object.py
