@@ -1,1 +1,1 @@
-from .grad_obj import Dx
+from .grad_obj import D_Op

@@ -2,7 +2,7 @@ import polars as pl
 import numpy as np
 import torch
 from typing import Iterable, Sequence
-from ..scaling import PdNormScaler as NormScaler
+from ..scaling import NormScaler
 class CleanerMeta:
     def __init__(self,
                  df:pl.DataFrame,

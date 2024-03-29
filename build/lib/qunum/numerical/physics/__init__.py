@@ -1,2 +1,2 @@
-from . import quantum as qpid, pinns, data, classical
-from .quantum.qobjs import direct_prod
+from . import quantum, classical
+from .quantum.qobjs import direct_prod, TQobj

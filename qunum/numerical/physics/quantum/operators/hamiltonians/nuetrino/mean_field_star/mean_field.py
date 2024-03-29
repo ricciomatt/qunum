@@ -5,7 +5,7 @@ from torch import einsum, Tensor
 import numba as nb
 import numpy as np
 from ......constants import c as c
-from .......seml.fit.numerical_solvers.magnus import MagnusGenerator
+from .......mathematics.numerics import MagnusGenerator
 from .......mathematics.algebra.representations.su import get_pauli
 from .......seml.data.data_loaders.lazy.hamiltonian import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt

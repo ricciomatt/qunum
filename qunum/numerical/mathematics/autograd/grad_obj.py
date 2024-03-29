@@ -1,203 +1,16 @@
 from torch.autograd import grad
-from torch import jit, Tensor, zeros, ones, complex as complex_, tensor, is_nonzero
-from typing import List, Optional, Iterable, Any, Callable
-from torch import Tensor, jit, reshape
+from torch import Tensor, tensor, is_nonzero
+from typing import Iterable, Any, Callable
 from ...physics.quantum.qobjs.torch_qobj import TQobj
-from ...seml.data.data_loaders.lazy.sampler import LazySampler
+from .grad_ten import DxCTen, DxRTen
+from .grad_qobj import DxRQobj, DxCQobj
 def unity(x)->Tensor|TQobj:
     return x
-
-@jit.script
-def DxRTen(
-        y:Tensor,
-        x:Tensor,
-        order:int, 
-        der_dim:Tensor,
-        retain_graph: bool,
-        create_graph: bool,
-        allow_unused: bool
-    )->Tensor:
-    shp = list(y.shape)
-    if(len(der_dim.shape) != 0):
-        shp.append(len(der_dim.shape))
-    
-    l = 1
-    for s in shp:
-        l*=s
-    y = y.flatten()
-    grad_outputs: List[Optional[Tensor]] = [ 
-        ones(y.shape[0], dtype=y.dtype, device=y.device) 
-    ]
-    dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-    for o in range(order):
-        rt:bool = bool(retain_graph or o != order-1)
-        if(o != 0):
-            dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-        t = grad(
-                [ y ], 
-                [ x ], 
-                grad_outputs=grad_outputs, 
-                retain_graph=rt, 
-                create_graph=create_graph,
-                allow_unused=allow_unused,
-            )[0]
-        if(t is not None):
-            if(len(t.shape) != 1):
-                dy_dx = dy_dx + (t[:,der_dim].flatten())
-            else:
-                dy_dx = dy_dx + t
-        else:
-            print(None)
-        if(o != order-1):
-            y = dy_dx.clone()
-    return reshape(dy_dx, shp)
-
-
-@jit.script
-def DxCTen(
-    y:Tensor,
-    x:Tensor,
-    order:int, 
-    der_dim:Tensor,
-    retain_graph: bool,
-    create_graph: bool,
-    allow_unused: bool
-)->Tensor:
-    shp = list(y.shape)
-    if(len(der_dim.shape) != 0):
-        shp.append(len(der_dim.shape))
-    l = 1
-    for s in shp:
-        l*=s
-    y = y.flatten()
-    dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-    grad_outputs: List[Optional[Tensor]] = [ 
-        ones(y.shape, dtype=y.dtype, device=y.device).real
-    ]
-    for o in range(order):
-        rt:bool = bool(retain_graph or o != order-1)
+class LazySampler:
+    def __init__(self) -> None:
+        pass
         
-        if(o != 0):
-            dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-        tr = grad([ y.real ], 
-                [ x ], 
-                grad_outputs=grad_outputs, 
-                retain_graph=rt, 
-                create_graph=create_graph,
-                allow_unused=allow_unused,
-            )[0]
-        ti = grad([ y.imag ], 
-                [ x ], 
-                grad_outputs=grad_outputs, 
-                retain_graph=rt, 
-                create_graph=create_graph,
-                allow_unused=allow_unused,
-            )[0]
-        if(tr is not None and ti is not None):
-            if(len(tr.shape) != 1):
-                dy_dx = dy_dx + complex_(tr[:,der_dim], ti[:,der_dim]).flatten()
-            else:
-                dy_dx = dy_dx + complex_(tr, ti).flatten()
-        if(o != order-1):
-            y = dy_dx.clone()
-    return (reshape(dy_dx, shp))
-
-
-
-@jit.script
-def DxCQobj(
-        y:TQobj,
-        x:Tensor,
-        order:int,
-        der_dim:Tensor, 
-        retain_graph: bool = True, 
-        create_graph: bool = False, 
-        allow_unused: bool = True,
-    )->Tensor:
-    shp = list(y.shape)
-    if(len(der_dim.shape) != 0):
-        shp.append(len(der_dim.shape))
-    l = 1
-    for s in shp:
-        l*=s
-    y = y.flatten()
-    dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-    grad_outputs: List[Optional[Tensor]] = [ 
-        ones(y.shape, dtype=y.dtype, device=y.device).real
-    ]
-    for o in range(order):
-        rt:bool = bool(retain_graph or o != order-1) 
-        if(o != 0):
-            dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-        tr = grad(
-                [ y.real ], 
-                [ x ], 
-                grad_outputs=grad_outputs, 
-                retain_graph=rt, 
-                create_graph=create_graph,
-                allow_unused=allow_unused,
-            )[0]
-        ti = grad(
-                [ y.imag ], 
-                [ x ], 
-                grad_outputs=grad_outputs, 
-                retain_graph=rt, 
-                create_graph=create_graph,
-                allow_unused=allow_unused,
-            )[0]
-        if(tr is not None and ti is not None):
-            if(len(tr.shape) != 1):
-                dy_dx = dy_dx + complex_(tr[:,der_dim], ti[:,der_dim]).flatten()
-            else:
-                dy_dx = dy_dx + complex_(tr, ti).flatten()
-        if(o != order-1):
-            y = dy_dx.clone()
-    return (reshape(dy_dx, shp))
-
-
-@jit.script
-def DxRQobj(
-        y:TQobj,
-        x:Tensor,
-        order:int,
-        der_dim:Tensor, 
-        retain_graph: bool = True, 
-        create_graph: bool = False, 
-        allow_unused: bool = True,
-    )->Tensor:
-    shp = list(y.shape)
-    if(len(der_dim.shape) != 0):
-        shp.append(len(der_dim.shape))
-    l = 1
-    for s in shp:
-        l*=s
-    y = y.flatten()
-    dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-    grad_outputs: List[Optional[Tensor]] = [ 
-        ones(y.shape, dtype=y.dtype, device=y.device).real
-    ]
-    for o in range(order):
-        rt:bool = bool(retain_graph or o != order-1) 
-        if(o != 0):
-            dy_dx = zeros(l, dtype = y.dtype, device = y.device).flatten()
-        t = grad(
-                [ y ], 
-                [ x ], 
-                grad_outputs=grad_outputs, 
-                retain_graph=rt, 
-                create_graph=create_graph,
-                allow_unused=allow_unused,
-            )[0]
         
-        if(t is not None):
-            if(len(t.shape) != 1):
-                dy_dx = dy_dx + t[:,der_dim].flatten()
-            else:
-                dy_dx = dy_dx + t.flatten()
-        if(o != order-1):
-            y = dy_dx.clone()
-    return (reshape(dy_dx, shp))
-
 
 
 class D_Op:
@@ -259,7 +72,7 @@ class D_Op:
         #Derivative Dims
         if(der_dims is None):
             assert self.der_dims is not None, ValueError('Derivative with respect to dimensions must be specified')
-            der_dims = tensor(self.der_dims)
+            der_dims = self.der_dims
         elif(isinstance(der_dims, Tensor)):
             pass
         elif(isinstance(der_dims,int)):
@@ -277,13 +90,14 @@ class D_Op:
                 A = (DxRTen(y, x, order, der_dims, **self.kwargs))
         #TQobj Derivatives
         elif(isinstance(y, TQobj)):
-            y = TQobj(y)
+            meta = y._metadata
             if(y.is_complex()):
                 if(x.is_complex()):
                     assert not is_nonzero(x.imag).all() or not is_nonzero(x.real).all(), ValueError('Need to be either all real or all imaginary')
                 A = (DxCQobj(y, x, order, der_dims, **self.kwargs))
             else:
                 A = (DxRQobj(y, x, order, der_dims, **self.kwargs))
+            A = TQobj(A, meta = meta)
         return self.fun_(A)
     
     def lazy_der(self, y_fun:None|Callable = None, 

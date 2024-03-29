@@ -18,7 +18,7 @@ from ..functions import gauss_functs
 from ...fit import grad_descent
 from ...nn import optimizers as optimizer
 
-from ...stats import rbst_sig
+
 from ....mathematics.numerics.grid_space import ord_to_grid, construct_cont_gen
 import nltk.tokenize as tokenizer
 from ...data.preprocessing.scaling import NormScaler
@@ -27,6 +27,9 @@ from ....mathematics.numerics import integrators_
 from typing import Callable
 from numpy.typing import NDArray
 
+
+def rbst_sig(x, ax = 0):
+    return 1.4826*np.nanmedian(np.abs(np.nanmedian(x, axis = ax) - x),axis=ax)
 
 class Kernal:
     def __init__(self,

@@ -8,10 +8,12 @@ import numpy as np
 import pandas as pd
 import polars as pl
 from ...scaling import NormScaler
-from .....stats.stats_rbst import rbst_sig
-from ......numerics.grid_space import ord_to_grid
+from ......mathematics.numerics.grid_space import ord_to_grid
 from .....kernals import Kernal
 from ...scaling import NormScaler
+
+def rbst_sig(x, ax = 0):
+    return 1.4826*np.nanmedian(np.abs(np.nanmedian(x, axis = ax) - x),axis=ax)
 
 class PdDataCleaner:
     def __init__(self,

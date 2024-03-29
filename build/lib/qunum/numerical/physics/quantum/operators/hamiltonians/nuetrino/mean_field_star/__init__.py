@@ -3,12 +3,12 @@ import torch
 from typing import Callable
 from .obj import MeanField
 from .phyics_functs import *
-from ......data.hamiltonian import LazyTimeHamiltonian
-from .......numerics.integrators import NewtonCoates
+from .......seml.data.data_loaders.lazy.hamiltonian import LazyTimeHamiltonian
+from .......mathematics.numerics.integrators import NewtonCoates
 from .....qobjs import TQobj, direct_prod
 from ....nuetrino import pmns2
 import numpy as np 
-from .......seml.fitting_algos import MagnusGenerator
+from .......seml.fit import MagnusGenerator
 
 def init_psi(n:int, theta:float = np.pi/5, dtype = torch.complex128)->TQobj:
     b = TQobj(torch.tensor([[1.,0.]], dtype= dtype), n_particles=1, hilbert_space_dims=2)

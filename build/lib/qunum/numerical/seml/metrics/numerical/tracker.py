@@ -4,6 +4,7 @@ import torch
 from plotly import graph_objects as go
 def unity(x):
     return x 
+
 class ModelTracker:
     def __init__(self,
                  functions:dict[str:Callable],
