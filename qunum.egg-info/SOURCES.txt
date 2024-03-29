@@ -26,8 +26,9 @@ qunum/numerical/mathematics/algebra/representations/many_body/__init__.py
 qunum/numerical/mathematics/algebra/representations/many_body/tensor_product_space.py
 qunum/numerical/mathematics/algebra/representations/su/__init__.py
 qunum/numerical/mathematics/autograd/__init__.py
-qunum/numerical/mathematics/autograd/grad_qobj.py
-qunum/numerical/mathematics/autograd/grad_ten.py
+qunum/numerical/mathematics/autograd/grad_obj.py
+qunum/numerical/mathematics/autograd/test_grad_qobj.py
+qunum/numerical/mathematics/autograd/test_grad_ten.py
 qunum/numerical/mathematics/combintorix/__init__.py
 qunum/numerical/mathematics/combintorix/index_combos.py
 qunum/numerical/mathematics/random/__init__.py

@@ -1,25 +1,28 @@
 import torch
-try:
+'''try:
     import cupy as cp
     from cupy.typing import NDArray as CPArray
 except:
     import numpy as cp
     from numpy.typing import NDArray as CPArray
+'''
 
+import numpy as cp
+from numpy.typing import NDArray as CPArray
 import numpy as np
 import pandas as pd
 import polars as pl
 from imblearn.over_sampling import ADASYN,SMOTE,SMOTEN,SMOTENC, SVMSMOTE, KMeansSMOTE, RandomOverSampler
 
 from ..functions import gauss_functs
-from ...fitting_algos import grad_descent
+from ...fit import grad_descent
 from ...nn import optimizers as optimizer
 
-from ...stats.stats_rbst import rbst_sig
-from ....numerics.grid_space import ord_to_grid, construct_cont_gen
+from ...stats import rbst_sig
+from ....mathematics.numerics.grid_space import ord_to_grid, construct_cont_gen
 import nltk.tokenize as tokenizer
 from ...data.preprocessing.scaling import NormScaler
-from ....numerics import integrators_
+from ....mathematics.numerics import integrators_
 
 from typing import Callable
 from numpy.typing import NDArray

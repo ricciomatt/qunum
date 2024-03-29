@@ -4,10 +4,10 @@ from sympy import Matrix, latex, I
 from torch import einsum, Tensor
 import numba as nb
 import numpy as np
-from .......constants import c as c
-from .......seml.fitting_algos.numerical_solvers.magnus import MagnusGenerator
+from ......constants import c as c
+from .......seml.fit.numerical_solvers.magnus import MagnusGenerator
 from .......mathematics.algebra.representations.su import get_pauli
-from ......data.hamiltonian import LazyTimeHamiltonian
+from .......seml.data.data_loaders.lazy.hamiltonian import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch.distributions import Gamma, Normal
 from .....qobjs.torch_qobj import TQobj, direct_prod

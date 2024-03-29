@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader, Dataset, SequentialSampler, BatchSampler, RandomSampler, WeightedRandomSampler, Sampler
 from torch.distributions import Uniform, Normal, Distribution
-from ....distributions.normal.positive_def import SquareNormal
+from .....mathematics.random.distributions.normal.positive_def import SquareNormal
 from torch import Tensor
 class PhysikLoader:
     def __init__():

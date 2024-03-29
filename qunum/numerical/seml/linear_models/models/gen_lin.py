@@ -4,7 +4,7 @@ from torch.optim import Adam, SGD, Optimizer
 from .linear_model import LinearNN
 from ..estimators import *
 from torch import Tensor
-from ...fitting_algos.grad_descent.object import GradDescentTrain
+from ...fit.grad_descent.object import GradDescentTrain
 from ...data.data_loaders import DataLoader
 from ...data.preprocessing import ComputePoly
 import torch 

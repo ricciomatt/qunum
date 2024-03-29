@@ -1,6 +1,10 @@
 from typing import Callable
 import numpy as np
 import torch
+from plotly import graph_objects as go
+def unity(x):
+    return x 
+
 class ModelTracker:
     def __init__(self,
                  functions:dict[str:Callable],
@@ -21,3 +25,12 @@ class ModelTracker:
         
         self.ix+=1
         return
+    
+    def plot_fun(self, metrics:list[str]=['loss'], funs:list[Callable]=[np.log]):
+        data = list(map(lambda m: {
+                'type':'scatter',
+                'y':m[1](np.array(self.metrics[m[0]])),
+                'x':np.arange(len(self.metrics[m[0]])),
+                'name':m[0],
+            }, zip(metrics,funs)))
+        return go.Figure(data=data, layout={'title':'Loss Function', 'yaxis':{'title':'metric'},'xaxis':{'title':'step'}, 'height':500, 'width':1250})

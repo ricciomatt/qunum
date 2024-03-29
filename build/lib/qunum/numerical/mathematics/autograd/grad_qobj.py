@@ -8,11 +8,13 @@ from typing import Tuple, List, Optional
 def Dx(
         y:TQobj, 
         x:TQobj|Tensor,
-        der_dim:int|None = None,
+        order:int|None = 1,
+        der_dim:int|None = 0,
         retain_graph: bool = True, 
         create_graph: bool = False, 
         allow_unused: bool = True,
         symmetric: bool = False
+
     )->Tensor|TQobj:
     if not isinstance(y, TQobj):
         assert isinstance(y,TQobj), 'For Tensors use DxTen(y, x,...)'

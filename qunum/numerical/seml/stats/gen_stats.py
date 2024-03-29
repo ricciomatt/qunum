@@ -1,11 +1,10 @@
 import numpy as np
 import polars as pl
 import pandas as pd
-from . import stats_rbst
 import scipy as sp
 import scipy.stats as st
 from typing import Callable
-from ...numerics.grid_space import ord_to_grid
+from ...mathematics.numerics.grid_space import ord_to_grid
 
 class QuantileSum:
     def __init__(self, quant:float):
@@ -50,7 +49,7 @@ vq_objs = np.vectorize(quantile_objs)
 def summarize_pd(df:pd.DataFrame, group_col:str|list[str], val_cols:str|list[str])->pd.DataFrame:
     di_base = [np.nanmean, sp.stats.sem, 
                np.nanmedian,
-               np.nanstd, stats_rbst.rbst_sig,
+               np.nanstd, rbst_sig,
                np.nanmax,
                QuantileSum(.95), QuantileSum(.75), QuantileSum(.25), QuantileSum(.05),
                np.nanmin, 
@@ -104,7 +103,7 @@ class CentralLimit:
             
         else:
             self.u = np.median(x, axis=0)
-            self.sigma = stats_rbst.rbst_sig(x, ax=0)
+            self.sigma = rbst_sig(x, ax=0)
             
         return
     def pdf(self,n:int|float, x_:np.array = None, num_pts = 1000):
@@ -115,4 +114,15 @@ class CentralLimit:
             
     def eval(self, a:float, b:float):
         pass
-        
+
+
+def rbst_sig(x, ax = 0):
+    return 1.4826*np.nanmedian(np.abs(np.nanmedian(x, axis = ax) - x),axis=ax)
+
+def rbst_cov(x, ax = 0):
+    pass 
+
+def rbst_sig_pl(df, col):
+    return 1.4826*(df[col].median() - df[col]).abs().median()
+
+
