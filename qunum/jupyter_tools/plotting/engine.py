@@ -1,6 +1,5 @@
 from typing import Any, Iterable
 from plotly import express as px
-from polars import DataFrame
 class PlotIt:
     def __init__(self, engine:str='plotly', offline:bool = False)->None:
         self.engine = engine
@@ -22,7 +21,6 @@ class PlotIt:
         return 
     
     def show(self):
-
         return
     
     def plot_it(self):
