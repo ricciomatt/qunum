@@ -6,7 +6,7 @@ from .......mathematics.algebra.representations.su import get_gellmann, get_paul
 from .....qobjs import TQobj
 from IPython.display import display as disp, Markdown as md
 from sympy import latex, Matrix, I
-from .......constants import c
+from ......constants import c
 class MeanField:
     def __init__(self, 
                 n_particles:int=2,

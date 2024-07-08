@@ -1,7 +1,7 @@
 from typing import Any
 import torch
 from torch import einsum
-from .......constants import c as c
+from ......constants import c as c
 
 @torch.jit.script
 def mu(t:torch.Tensor, mu0:float, Rv:float, r_0:float)->torch.Tensor:

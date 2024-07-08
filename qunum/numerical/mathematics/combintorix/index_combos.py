@@ -35,3 +35,29 @@ class LazyEnumIndex:
     
     def __iter__(self):
         return self
+
+
+def yield_ixs(inpt:torch.Tensor):
+    idx = torch.tensor(inpt.shape, dtype = torch.int32)
+    cix = torch.zeros(idx.shape[0], dtype = torch.int32)
+    fst:bool = True
+    while True:
+        if(fst):
+            fst = False
+            yield cix
+        if not (torch.all(cix == idx-1)) :
+            a = 1
+            k = True
+            while k:
+                if (cix[-a] == idx[-a]-1):
+                    if(a == cix.shape[0]):
+                        break
+                    cix[-a] = 0
+                    a += 1
+                else:
+                    cix[-a] += 1
+                    break
+            yield cix.clone()
+        
+        else:
+            break

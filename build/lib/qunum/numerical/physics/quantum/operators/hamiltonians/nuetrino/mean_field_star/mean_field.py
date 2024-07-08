@@ -15,11 +15,13 @@ from typing import Callable
 from ....nuetrino import pmns2
 @torch.jit.script
 def mu(t:torch.Tensor, mu0:float, Rv:float, r_0:float)->torch.Tensor:
-    return mu0*( 1 - torch.sqrt(1 - ((Rv/(r_0 + t))**(2)) ) )**(2)
+    #return mu0*( 1 - torch.sqrt(1 - ((Rv/(r_0 + t))**(2)) ) )**(2)
+    return mu0*torch.exp(-(Rv/r_0)*t)
        
 @torch.jit.script
 def hamiltonian_operator(H_0:torch.Tensor, H_1:torch.Tensor, t:torch.Tensor, r:float, Rv:float, v:float, mu0:float )->torch.Tensor:
-    u = mu0*torch.pow(1-torch.sqrt(1-torch.pow(Rv/(r+v*t),2)),2)
+    #u = mu0*torch.pow(1-torch.sqrt(1-torch.pow(Rv/(r+v*t),2)),2)
+    u = (Rv/r)*torch.exp(-t*v)
     a = torch.ones(u.shape[0], dtype = torch.complex64)
     return (einsum('n, ij->nij', a.to(H_0.device), H_0) + einsum('n,ij->nij',(u), H_1))
 

@@ -38,8 +38,7 @@ class TQobj(Tensor):
                 kwargs['requires_grad'] = False
 
         if(isinstance(data, np.ndarray)):
-            data = torch.from_numpy(data, *args, dtype=dtype, **kwargs)
-        
+            data = torch.from_numpy(data).to(dtype = dtype).requires_grad_(kwargs['requires_grad'])
         elif(isinstance(data, list)):
             try:
                 data = torch.tensor(data, dtype = dtype)

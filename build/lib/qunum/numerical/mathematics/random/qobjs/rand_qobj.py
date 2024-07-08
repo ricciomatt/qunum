@@ -24,14 +24,17 @@ def rand_unitary(size:tuple, dist:None|list[torch.distributions.Distribution,tor
     else:
         return TQobj(T, n_particles=n_particles, hilbert_space_dims=hilbert_space_dims, dims = dims, dtype= dtype)
 
-def rand_state(*args, number_pts:int = 1,  n_particles:int=1, hilbert_space_dims:int= 2, dims:dict|None =None, dtype:torch.TypedStorage = torch.complex128, to_density:bool = False, **kwargs)->TQobj:
+def rand_state(number_pts:int = 1,  n_particles:int=1, hilbert_space_dims:int= 2, dims:dict|None =None, dtype:torch.TypedStorage = torch.complex128, to_density:bool = False, **kwargs)->TQobj:
     if(dims is None):
-        l = n_particles**hilbert_space_dims
+        l = hilbert_space_dims**n_particles
+        args = (number_pts, l, 1)
     else:
         l = 1
         for d in dims:
             l+=d**dims[d]
-    S = TQobj(torch.rand((number_pts, l, 1),*args, dtype=dtype,**kwargs), n_particles=n_particles, hilbert_space_dims=hilbert_space_dims, dtype=dtype, dims = dims)
+        args = (number_pts, l, 1)
+    
+    S = TQobj(torch.rand(args, dtype=dtype), n_particles=n_particles, hilbert_space_dims=hilbert_space_dims, dtype=dtype, dims = dims, **kwargs)
     with torch.no_grad():
         S/=torch.sqrt(S.dag() @ S)
     if(to_density):

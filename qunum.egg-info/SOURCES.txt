@@ -44,6 +44,8 @@ qunum/numerical/mathematics/random/distributions/normal/__init__.py
 qunum/numerical/mathematics/random/distributions/normal/positive_def.py
 qunum/numerical/mathematics/random/qobjs/__init__.py
 qunum/numerical/mathematics/random/qobjs/rand_qobj.py
+qunum/numerical/mathematics/signal/__init__.py
+qunum/numerical/mathematics/signal/ff.py
 qunum/numerical/mathematics/stats/__init__.py
 qunum/numerical/mathematics/stats/gen_stats.py
 qunum/numerical/mathematics/stats/filtering/__init__.py
@@ -89,6 +91,8 @@ qunum/numerical/physics/quantum/operators/hamiltonians/nuetrino/mean_field_star/
 qunum/numerical/physics/quantum/operators/hamiltonians/nuetrino/mean_field_star/mean_field.py
 qunum/numerical/physics/quantum/operators/hamiltonians/nuetrino/mean_field_star/obj.py
 qunum/numerical/physics/quantum/operators/hamiltonians/nuetrino/mean_field_star/phyics_functs.py
+qunum/numerical/physics/quantum/operators/hamiltonians/nuetrino/twop_star/__init__.py
+qunum/numerical/physics/quantum/operators/hamiltonians/nuetrino/twop_star/opers.py
 qunum/numerical/physics/quantum/operators/nuetrino/__init__.py
 qunum/numerical/physics/quantum/qcomp/__init__.py
 qunum/numerical/physics/quantum/qcomp/algorithms/__init__.py
