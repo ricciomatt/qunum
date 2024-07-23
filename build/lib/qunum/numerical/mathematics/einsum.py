@@ -1,6 +1,6 @@
 from torch import einsum as tein, jit, Tensor
 from ..physics.quantum.qobjs import TQobj
-from ..physics.quantum.qobjs.meta import QobjMeta
+from ..physics.quantum.qobjs.meta.meta import QobjMeta
 from typing import Tuple
 
 def einsum(indicies:str, *args:Tuple[Tensor|TQobj,...], **kwargs)->TQobj:

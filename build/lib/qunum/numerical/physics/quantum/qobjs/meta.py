@@ -42,20 +42,23 @@ class QobjMeta:
             assert np.prod(list(dims.values())) == l, f'''The ProductSum(dims) must be equivalent to the number of dimensions of the hilbert space'''
         else:
             dims = dict.fromkeys(range(n_particles),0)
-        self.n_particles = len(dims)
         self.hilbert_space_dims = l
-        self.dims = dims
         self.shp = shp
+        self.refactor_dims(dims)
+        self.eigenBasis = None 
+        self.eigenVals = None
+        self.is_sparse = is_sparse
+        return
+    
+    def refactor_dims(self, dims:dict[int:int])->None:
+        self.dims = dims 
         if(self.obj_tp != 'scaler'):
             self.ixs = pl.LazyFrame(itertools.product(*[range(dims[x]) for x in dims])).with_row_count()
         else:
             self.ixs = None
-        self.eigenBasis = None 
-        self.eigenVals = None
-        self.is_sparse = is_sparse
-        
+        self.n_particles = len(dims)
         return
-    
+
     def update_dims(self, keep_ixs:Iterable, reorder:bool = False)->None:
         self.ixs = self.ixs.select(vgc(keep_ixs))
         if(reorder):
@@ -105,6 +108,7 @@ class QobjMeta:
             raise TypeError('tr_out must be Iterable[int] or int')
         assert self.particle_in(ix_), ValueError('Particle Not found')
         return ix_
+    
     def query_particle_ixs(self, ix:NDArray):
         a:np.ndarray = vgc(ix)
         return self.ixs.group_by(

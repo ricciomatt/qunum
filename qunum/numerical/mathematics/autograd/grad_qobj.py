@@ -2,7 +2,7 @@
 from torch.autograd import grad
 from torch import Tensor, jit, zeros, ones, complex as complex_, reshape
 from typing import List, Optional
-from ...physics.quantum.qobjs.torch_qobj import TQobj
+from ...physics.quantum.qobjs.dense.core.torch_qobj import TQobj
 @jit.script
 def DxCQobj(
         y:TQobj,

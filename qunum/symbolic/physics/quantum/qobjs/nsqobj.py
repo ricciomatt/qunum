@@ -2,7 +2,7 @@ from sympy import Matrix, Symbol, kronecker_product as kron, log
 from numpy import ndarray
 import numpy as np 
 from typing import Iterable
-from .....numerical.physics.quantum.qobjs.meta import QobjMeta
+from .....numerical.physics.quantum.qobjs.meta.meta import QobjMeta
 from copy import copy, deepcopy
 class SymbQobj(Matrix):
     def __init__(self,

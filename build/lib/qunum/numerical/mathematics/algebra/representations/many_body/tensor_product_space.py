@@ -1,5 +1,5 @@
 import torch
-from .....physics.quantum.qobjs.torch_qobj import TQobj, direct_prod
+from .....physics.quantum.qobjs.dense.core.torch_qobj import TQobj, direct_prod
 
 def getJ(*args:tuple[TQobj])->tuple[TQobj]:
     I = get_Ids(*args)

@@ -1,0 +1,1 @@
+from .dot_prd import dot

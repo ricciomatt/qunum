@@ -1,2 +1,2 @@
-from .magnus import MagnusGenerator
-from .dyson_series import DysonSeriesGenerator
+from .time_dependent import *
+from .time_independent import TimeEvolve, tEvolve

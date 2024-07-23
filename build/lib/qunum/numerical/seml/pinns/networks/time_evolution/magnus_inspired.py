@@ -6,7 +6,7 @@ from torch.linalg import matrix_exp as expm
 from typing import Callable
 from .....mathematics import einsum
 from .....mathematics.algebra import ad
-from .....physics.quantum.qobjs.torch_qobj import TQobj
+from .....physics.quantum.qobjs.dense.core.torch_qobj import TQobj
 
 class MagnusInspired(Module):
     def __init__(self, 

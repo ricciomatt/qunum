@@ -1,5 +1,5 @@
 import torch
-from ....physics.quantum.qobjs.torch_qobj import TQobj
+from ....physics.quantum.qobjs.dense.core.torch_qobj import TQobj
 from torch import swapaxes as SW
 def rand_hermitian(size:tuple, dist:None|list[torch.distributions.Distribution,torch.distributions.Distribution] = None, *args:tuple[int], to_tensor:bool = False, dtype:torch.TypedStorage = torch.complex128, n_particles:int=1, hilbert_space_dims:int= 2, dims:dict|None =None,  **kwargs)->TQobj|torch.Tensor:
     assert size[-1] == size[-2], ValueError('Must be a Symmetric Matrix')

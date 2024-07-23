@@ -1,5 +1,5 @@
 import torch
-from typing import Iterator, Set
+
 class LazyEnumIndex:
     def __init__(self, inpt:torch.Tensor)->None:
         self.idx = torch.tensor(inpt.shape, dtype = torch.int32)

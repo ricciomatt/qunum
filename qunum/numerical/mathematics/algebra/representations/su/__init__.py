@@ -21,7 +21,7 @@ def get_pauli(to_tensor:bool= False, include_identity:bool=True, dtype = np.comp
     sigma[ix,1,0] = complex(1,0)
     ix-=1
     if(tqobj):
-        from .....physics.quantum.qobjs.torch_qobj import TQobj
+        from .....physics.quantum.qobjs.dense.core.torch_qobj import TQobj
         return TQobj(sigma)
     elif(to_tensor):
         return tensor(sigma)
@@ -73,7 +73,7 @@ def get_gellmann(to_tensor:bool = False, include_identity:bool= True, tqobj:bool
     lam[ix]*=1/np.sqrt(3)
 
     if(tqobj):
-        from .....physics.quantum.qobjs.torch_qobj import TQobj
+        from .....physics.quantum.qobjs.dense.core.torch_qobj import TQobj
         return TQobj(lam)
     elif(to_tensor):
         return tensor(lam)

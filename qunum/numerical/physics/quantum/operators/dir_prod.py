@@ -1,5 +1,5 @@
-from ..qobjs.torch_qobj import TQobj
-from ..qobjs.meta import QobjMeta
+from ..qobjs.dense.core.torch_qobj import TQobj
+from ..qobjs.meta.meta import QobjMeta
 from torch import kron
 
 def direct_prod(*args:tuple[TQobj])->TQobj:

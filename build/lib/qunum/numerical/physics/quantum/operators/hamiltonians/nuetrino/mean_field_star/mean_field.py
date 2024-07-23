@@ -10,7 +10,7 @@ from .......mathematics.algebra.representations.su import get_pauli
 from .......seml.data.data_loaders.lazy.hamiltonian import LazyTimeHamiltonian
 from IPython.display import display as disp, Markdown as md, Math as mt
 from torch.distributions import Gamma, Normal
-from .....qobjs.torch_qobj import TQobj, direct_prod
+from .....qobjs.dense.core.torch_qobj import TQobj, direct_prod
 from typing import Callable
 from ....nuetrino import pmns2
 @torch.jit.script

@@ -5,7 +5,7 @@ from ..integrators.newton import NewtonCoates, integrate_newton_coates_do as new
 from scipy.special import bernoulli
 from torch import einsum
 from ...algebra import ad
-from ....physics.quantum.qobjs.torch_qobj import TQobj
+from ....physics.quantum.qobjs.dense.core.torch_qobj import TQobj
 from IPython.display import display as disp, Math as Mt
 from warnings import warn 
 class LazyTimeHamiltonian:

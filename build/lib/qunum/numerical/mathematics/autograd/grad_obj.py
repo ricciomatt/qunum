@@ -1,7 +1,7 @@
 from torch.autograd import grad
 from torch import Tensor, tensor, is_nonzero
 from typing import Iterable, Any, Callable
-from ...physics.quantum.qobjs.torch_qobj import TQobj
+from ...physics.quantum.qobjs.dense.core.torch_qobj import TQobj
 from .grad_ten import DxCTen, DxRTen
 from .grad_qobj import DxRQobj, DxCQobj
 def unity(x)->Tensor|TQobj:

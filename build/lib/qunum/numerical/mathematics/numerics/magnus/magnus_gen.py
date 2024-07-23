@@ -5,8 +5,9 @@ from ..integrators.newton import NewtonCoates, integrate_newton_coates_do as new
 from scipy.special import bernoulli
 from torch import einsum
 from ...algebra import ad
-from ....physics.quantum.qobjs.torch_qobj import TQobj
+from ....physics.quantum.qobjs.dense.core.torch_qobj import TQobj
 from IPython.display import display as disp, Math as Mt
+from warnings import warn 
 class LazyTimeHamiltonian:
     def __init__(self):
         pass
@@ -21,6 +22,7 @@ class MagnusGenerator:
                  set_iter_len:int=int(1e3),
                  call_funct = 'gen_function'
                  )->None:
+        warn('qn.math_.numerics.magnus.MagnusGenerator has been deprecated and will be removed please use: qn.physics.quantum.operators.time_evolve.magnus.MagnusGenerator')
         self.ix0 = ix0
         self.H = Hamiltonian
         self.set_order(order)
