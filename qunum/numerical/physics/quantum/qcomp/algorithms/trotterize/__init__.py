@@ -1,1 +1,0 @@
-from .trotter_product import ProductFormula

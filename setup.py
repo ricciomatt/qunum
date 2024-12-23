@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 with open('./requirements.txt', 'r') as r:
     req = r.read().splitlines()
-print(req)
+
 setup(
     name='qunum',
     version='1.0',
@@ -9,6 +9,7 @@ setup(
     author='Matthew Riccio',
     author_email='riccio_matt@outlook.com',
     packages=find_packages(exclude='test'),  
-    install_requires=req
+    install_requires=req,
+    include_package_data = True
 )
 

@@ -6,7 +6,8 @@ import polars as pl
 import numpy as np
 from typing import Iterable, Any, Self
 import itertools
-
+from torch import Tensor, arange
+from .....mathematics.combintorix import EnumerateArgCombos as enumIt
 class QobjMeta:
     def __init__(self, 
                  n_particles:int= 1,
@@ -36,19 +37,44 @@ class QobjMeta:
         elif(self.obj_tp != 'scaler'):
             assert np.prod(list(dims.values())) == l, f'''The ProductSum(dims) must be equivalent to the number of dimensions of the hilbert space'''
         else:
-            dims = dict.fromkeys(range(n_particles),0)
-        self.hilbert_space_dims = l
-        self.shp = shp
+            dims:dict[int:int] = dict.fromkeys(range(n_particles),0)
+        self.hilbert_space_dims:int = l
+        self.shp:tuple = shp
         self.refactor_dims(dims)
-        self.eigenBasis = None 
-        self.eigenVals = None
-        self.is_hermitian = is_hermitian
+        self.eigenBasis:Tensor  = None 
+        self.eigenVals:Tensor = None
+        self.is_hermitian:bool = is_hermitian
         return
     
+    def set_eig(self, eigenBasis:Tensor|None = None , eigenVals:Tensor|None = None):
+        if(eigenBasis is not None): self.eigenBasis = eigenBasis.to_sparse()
+        if(eigenVals is not None): self.eigenVals = eigenVals.to_sparse()
+        return
+    
+    def get_eig_vals(self)->Tensor|None:
+        if(self.eigenVals is not None):
+            eigV = self.eigenVals.to_dense()
+        else:
+            eigV = None
+        return eigV
+
+
+    def get_eig(self)->tuple[Tensor, Tensor]|tuple[Tensor,None]|tuple[None, None]:
+        if(self.eigenBasis is not None):
+            eigB = self.eigenBasis.to_dense()
+        else:
+            eigB = None
+        if(self.eigenVals is not None):
+            eigV = self.eigenVals.to_dense()
+        else:
+            eigV = None
+        return eigV, eigB
+
     def refactor_dims(self, dims:dict[int:int])->None:
         self.dims = dims 
         if(self.obj_tp != 'scaler'):
-            self.ixs = pl.LazyFrame(itertools.product(*[range(dims[x]) for x in dims])).with_row_count()
+            A = enumIt(*(range(0,dims[x]) for x in dims), ignore_arange=True)
+            self.ixs = pl.LazyFrame(A.__tensor__(rawIdx=True).numpy()).with_row_index()
         else:
             self.ixs = None
         self.n_particles = len(dims)
@@ -58,10 +84,10 @@ class QobjMeta:
         self.ixs = self.ixs.select(vgc(keep_ixs))
         if(reorder):
             self.dims = {i:self.dims[k] for i, k in enumerate(keep_ixs)}
-            self.ixs = self.ixs.rename({f"column_{k}":f"column_{i}" for i, k in enumerate(keep_ixs)}).with_row_count()
+            self.ixs = self.ixs.rename({f"column_{k}":f"column_{i}" for i, k in enumerate(keep_ixs)}).with_row_index()
         else:
             self.dims = {k:self.dims[k] for k in keep_ixs}
-            self.ixs = self.ixs.with_row_count()
+            self.ixs = self.ixs.with_row_index()
         self.n_particles = int(len(self.dims))
         self.hilbert_space_dims = np.prod(self.dims.values())
         return 
@@ -113,7 +139,7 @@ class QobjMeta:
                         a.tolist()
                     )
                 ).agg(
-                    pl.col('row_nr').implode().alias('ix')
+                    pl.col('index').implode().alias('ix')
                 ).collect().sort(a)['ix'].to_list()
     
 

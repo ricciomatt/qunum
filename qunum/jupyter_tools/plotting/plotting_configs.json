@@ -1,0 +1,172 @@
+{
+    "configs":{
+        "displaylogo":false, 
+        "editable": false,  
+        "modeBarButtons": [[
+            "select2d", "toggleSpikelines", 
+            "drawline", "drawrect","eraseshape",
+            "zoomIn2d", "zoomOut2d", "zoom2d", "pan2d", "autoScale2d", "resetScale2d",
+            "toImage"
+            ]
+        ],
+        "staticPlot":false
+    },
+    "layout":{
+        "dragmode":null,
+        "shapes":[],
+        "annotations":[],
+        "title": {
+            "font": {
+                "family": "Arial, sans-serif",
+                "size": 30,
+                "color": "black"
+            }
+        },
+        "font": {
+            "family": "Arial, sans-serif",
+            "size": 14,
+            "color": "black"
+        },
+        "plot_bgcolor": "white",
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "height":750,
+        "width":1250,
+        "xaxis": {
+            "title":{
+                "font": {
+                    "family": "Arial, sans-serif",
+                    "size": 20,
+                    "color": "black"
+                }
+            },
+            "tickfont": {
+
+              "family": "Arial, sans-serif",
+              "size": 15,
+              "color": "black"
+            },
+            "tickcolor": "black",
+            "showgrid":true,
+            "gridcolor":"black",
+            "zeroline":true,
+            "zerolinewidth":2.5,
+            "zerolinecolor":"black",
+            "anchor":"y",
+            "domain":[0,1]
+        },
+        "hoverlabel": {
+            "bgcolor": "white",
+            "bordercolor": "black",
+            "font": {
+                "family": "Arial",
+                "size": 14,
+                "color": "black"
+            }
+        },
+
+        
+        "yaxis": {
+            "title":{
+                "font": {
+                    "family": "Arial, sans-serif",
+                    "size": 20,
+                    "color": "black"
+                }
+            },
+            "tickfont": {
+                "family": "Arial, sans-serif",
+                "size": 15,
+                "color": "black"
+            },
+            "tickcolor": "black",
+            "showgrid":true,
+            "gridcolor":"black",
+            "zeroline":true,
+            "zerolinewidth":2.5,
+            "zerolinecolor":"black",
+            "anchor":"x",
+            "domain":[0,1]
+        },
+        
+        
+
+        "boxmode":null,
+        "boxgap":null,
+        "boxgroupgap":null,
+        
+        "barmode":null,
+        "bargap":null,
+        "bargroupgap":null,
+
+        "waterfallmode":null,
+        "waterfallgap":null,
+        "waterfallgroupgap":null,
+
+        "funnelmode":null,
+        "funnelgap":null,
+        "funnelgroupgap":null
+        
+    },
+    "defaults":{
+        "axis": {
+            "title":{
+                "font": {
+                    "family": "Arial, sans-serif",
+                    "size": 20,
+                    "color": "black"
+                }
+            },
+            "tickfont": {
+                "family": "Arial, sans-serif",
+                "size": 15,
+                "color": "black"
+            },
+            "tickcolor": "black",
+            "showgrid":true,
+            "gridcolor":"black",
+            "zeroline":true,
+            "zerolinewidth":2.5,
+            "zerolinecolor":"black",
+            "anchor":"{ax}{idx}",
+            "domain":[0,1]
+        },
+        "polar":{"domain":[0,1]},
+        "plot": {
+            "type":"scatter", 
+            "xaxis":"x", 
+            "yaxis":"y"
+        },
+        "plot_polar": {
+            "type":"scatterpolar",
+            "subplot":"polar"
+        },
+        "animate_menu":[{
+                "type": "buttons",
+                "showactive": false,
+                "buttons": [
+                    {
+                        "label": "Play",
+                        "method": "animate",
+                        "args": [null, {
+                            "frame": { "duration": 300, "redraw": true },
+                            "transition": { "duration": 300 },
+                            "fromcurrent": true
+                        }]
+                    },
+                    {
+                        "label": "Pause",
+                        "method": "animate",
+                        "args": [[null], {
+                            "frame": { "duration": 0, "redraw": true },
+                            "mode": "immediate",
+                            "transition": { "duration": 0 }
+                        }]
+                    }
+                    ]
+                }
+            ]
+        
+    }
+
+}  
+

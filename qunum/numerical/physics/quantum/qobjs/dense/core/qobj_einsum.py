@@ -1,5 +1,5 @@
 from torch import einsum as tein, jit, Tensor
-from ... import TQobj
+from .torch_qobj import TQobj
 from ...meta.meta import QobjMeta
 from typing import Tuple
 

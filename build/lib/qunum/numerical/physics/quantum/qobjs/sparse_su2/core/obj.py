@@ -3,7 +3,7 @@ import numpy as np
 from .core import addFun, subFun, doMul, ptrace, fullTrace, doMulStateMat, doMulStateState
 from typing import Self, Iterable
 from torch import view_as_real as toR, view_as_complex as toC
-from polars import from_numpy as pl_from_numpy, concat_str, col, when, lit, Int32, String, DataFrame as PlDataFrame, LazyFrame as PlLazyFrame, Series as PlSeries
+from polars import from_numpy as pl_from_numpy, concat_str, col, when, lit, Int32, String, DataFrame as PlDataFrame, LazyFrame as PlLazyFrame, Series as PlSeries, format as plform
 from pandas import DataFrame as PdDataFrame
 from pyarrow import Table as PyArrowTable
 from warnings import warn
@@ -12,55 +12,131 @@ class State:
     def __init__(self, objTp:str = 'ket') -> Self:
         self.objTp:str= objTp
         return
+    def set_obj_tp(self, objTp:str='ket')->Self:
+        self.objTp = objTp
+        return
+    
 
 
 class PauliMatrix:
-    def __init__(self, basis:torch.Tensor, coefs:torch.Tensor, dtype = torch.complex128)->Self:
-        assert isinstance(basis, torch.Tensor), TypeError('Must be Tensor type ')
-        assert isinstance(coefs, torch.Tensor), TypeError('Must be Tensor type')
-        assert basis.shape[-1] == 4, RuntimeError('basis.shape[-1] == 4')
-        if(len(coefs.shape) == 0):
-            assert len(basis.shape) == 2 or (len(basis.shape) == 3 and basis.shape[0] == 1), RuntimeError('Error a scalar coefficent requires scalar coeficents')
-            coefs = coefs.reshape([1])
-            match basis.shape:
-                case shp if len(shp) == 2:
-                    basis = basis.reshape((1,*basis.shape))
-                case _:
-                    basis = basis.reshape((1, *basis.shape[1:]))
-        else:
-            assert (coefs.shape[0] == basis.shape[0]), RuntimeError('coefs.shape[0] == basis.shape[0] ')
-        self.basis:torch.Tensor = basis.to(dtype = dtype)
-        self.coefs:torch.Tensor = coefs.to(dtype= dtype)
+    def __init__(self, basis:torch.Tensor, coefs:torch.Tensor, is_zero:bool=False, dtype:torch.dtype = torch.complex128, device:torch.device = 'cpu')->Self:
+        assert (basis is None and coefs is None) or isinstance(coefs,torch.Tensor) and isinstance(basis, torch.Tensor), TypeError('Must be Tensor type ')
+        self.dtype = dtype
+        self.device = device
+        match (len(coefs.shape), len(basis.shape)):
+            case (1, 3):
+                assert (coefs.shape[0] == basis.shape[0]), RuntimeError('coefs.shape[0] == basis.shape[0] ')
+            case (1, 2):
+                assert coefs.shape[0] == 1, RuntimeError('Incompatible shapes for basis.shape = {base}, coefs.shape = {coef}'.format(base = basis.shape, coef=coefs.shape))
+                basis = basis.reshape([1, *basis.shape])
+            case (0, 2):
+                basis = basis.reshape([1, *basis.shape])
+                coefs = coefs.reshape([1])
+            case (0,3):
+                assert basis.shape[0] ==1, RuntimeError('Incompatible shapes for basis.shape = {base}, coefs.shape = {coef}'.format(base = basis.shape, coef=coefs.shape))
+                coefs = coefs.reshape([1])
+            case _:
+                raise RuntimeError('Incompatible shapes for basis.shape = {base}, coefs.shape = {coef}'.format(base = basis.shape, coef=coefs.shape))
+        self.basis:torch.Tensor = basis.to(dtype = dtype, device = device)
+        self.coefs:torch.Tensor = coefs.to(dtype = dtype, device = device)
+        self.is_zero = is_zero
         return
     
     def __matmul__(self, b:Self|State) -> Self:
         match b:
             case b if isinstance(b,PauliMatrix):
-                return PauliMatrix(
-                    *doMul(
-                        self.basis, self.coefs, b.basis, b.coefs
-                    )
-                )
+                if(b.is_zero):
+                    return b
+                elif(self.is_zero):
+                    return self
+                else:
+                    A = doMul(
+                            self.basis, self.coefs, b.basis, b.coefs
+                        )
+                    if(A is None):
+                        return PauliMatrix(
+                            torch.zeros((1,1,4), dtype=self.dtype),
+                            torch.zeros((1), device=self.device),
+                            is_zero= True,
+                            dtype=self.dtype,
+                            device=self.device
+                        )
+                    else:
+                        return PauliMatrix(*A, is_zero=False, dtype=self.dtype, device = self.device)
             case b if isinstance(b,PauliState):
-                return PauliState(
-                    doMulStateMat(
-                        self.basis, self.coefs, b.basis
+                if(self.is_zero):
+                    return PauliState(torch.zeros_like(b.basis), b.objTp)
+                else:
+                    assert (b.objTp == 'ket'), 'To act on a state from the right must be ket'
+                    return PauliState(
+                        doMulStateMat(
+                            self.basis, self.coefs, b.basis, b.coefs
+                        ),
+                        objTp='ket',
+                        device=self.device,
+                        dtype=self.dtype
                     )
-                )
             case _:
                 raise TypeError('Must Be PauliState or PauliMatrix')
 
+    def __rmatmul__(self, b:Self|State) -> Self:
+        match b:
+            case b if isinstance(b,PauliMatrix):
+                if(b.is_zero):
+                    return b
+                elif(self.is_zero):
+                    return self
+                else:
+                    return PauliMatrix(
+                        *doMul(
+                            self.basis, self.coefs, b.basis, b.coefs
+                        )
+                    )
+            case b if isinstance(b,PauliState):
+                if(self.is_zero):
+                    return PauliState(torch.zeros(b.basis), b.objTp)
+                else:
+                    assert (b.objTp == 'bra'), 'To act on a state from the right must be bra'
+                    return PauliState(
+                        doMulStateMat(
+                            self.basis, self.coefs, b.basis, b.coefs
+                        ),
+                        objTp='bra'
+                    )
+            case _:
+                raise TypeError('Must Be PauliState or PauliMatrix but got {tp}'.format(tp=str(type(b))))
+
     def __add__(self, b:Self) -> Self:
         self.type_check(b)
-        return PauliMatrix( 
-            *addFun(self.basis, self.coefs, b.basis, b.coefs) 
-        )
+        if(b.is_zero):
+            return self
+        elif(self.is_zero):
+            return b
+        A = addFun(self.basis, self.coefs, b.basis, b.coefs) 
+        if(A is None):
+            return PauliMatrix(
+                torch.zeros((1, self.basis.shape[-2], 4), dtype = self.basis.dtype, device = self.basis.device), 
+                torch.tensor([0.0], dtype=self.coefs.dtype, device = self.coefs.device), 
+                is_zero=True
+            )
+        else:
+            return PauliMatrix( 
+                * A, is_zero=False
+            )
     
     def __sub__(self, b:Self) -> Self:
         self.type_check(b)
+        if(b.is_zero):
+            return self
+        elif(self.is_zero):
+            return -1*b
         A = subFun(self.basis, self.coefs, b.basis, b.coefs) 
         if(A is None):
-            pass
+            return PauliMatrix(
+                torch.zeros((1, self.basis.shape[-2], 4), dtype = self.basis.dtype, device = self.basis.device), 
+                torch.tensor([0.0], dtype=self.coefs.dtype, device = self.coefs.device), 
+                is_zero=True
+            )
         else:
             return PauliMatrix( 
                 *A
@@ -71,13 +147,16 @@ class PauliMatrix:
     
     def __rsub__(self, b:Self) -> Self:
         self.type_check(b)
+        if(b.is_zero):
+            return -1*self
+        elif(self.is_zero):
+            return b
         A = subFun(b.basis, b.coefs, self.basis, self.coefs) 
         if(A is None):
-            A = torch.zeros((self.basis.shape[0],1,4), dtype=torch.complex128)
-            A[:,:,0] = 1
             return PauliMatrix(
-                A,
-                torch.zeros(1)
+                torch.zeros((1, self.basis.shape[-2], 4), dtype = self.basis.dtype, device = self.basis.device), 
+                torch.tensor([0.0], dtype=self.coefs.dtype, device = self.coefs.device), 
+                is_zero=True
             )
         else:
             return PauliMatrix( 
@@ -100,35 +179,22 @@ class PauliMatrix:
             assert (b.shape[0] == self.coefs.shape[0]), TypeError(f'Must be a Pauli Matrix or Tensor of size ({self.coefs.shape[0]},)')
             return PauliMatrix(basis=self.basis, coefs=self.coefs*b)
     
-    def type_check(self, b:Self) -> bool:
-        assert (isinstance(b,PauliMatrix)), TypeError('Must be PauliMatrix')
-        return True
-    
-    def __rmatmul__(self, b:Self|State) -> Self:
-        match b:
-            case b if isinstance(b,PauliMatrix):
-                return PauliMatrix(
-                    *doMul(
-                        self.basis, self.coefs, b.basis, b.coefs
-                    )
-                )
-            case b if isinstance(b,PauliState):
-                return PauliState(
-                    doMulStateMat(
-                        self.basis, self.coefs, b.basis
-                    )
-                )
-            case _:
-                raise TypeError('Must Be PauliState or PauliMatrix')
-
     def __add__(self, b:Self) -> Self:
         self.type_check(b)
-        return PauliMatrix( 
-            *addFun(self.basis, self.coefs, b.basis, b.coefs) 
-        )
+        A = addFun(self.basis, self.coefs, b.basis, b.coefs) 
+        if(A is None):
+            return None
+        else:
+            return PauliMatrix( 
+                *A
+            )
     
     def __repr__(self) -> str:
-        return f"PauliMatrix(basis = \n{self.basis.__repr__()}\n coefs = {self.coefs.__repr__()})"
+        return f"PauliMatrix(basis = \n{self.basis.__repr__()},\ncoefs = \n{self.coefs.__repr__()},\nshape={self.basis.shape[:-2]}, is_zero={self.is_zero})"
+    
+    def __getitem__(self, ix:int|Iterable[int])->Self:
+        assert (self.coefs.shape[0] != 1 ), IndexError('Pauli Matrix of with one basis is not indexed')
+        return PauliMatrix(self.basis[ix], coefs=self.coefs[ix])
     
     def to_pauli_strings(self, to_ = 'PdDataFrame') -> PdDataFrame|PlDataFrame|PlLazyFrame|np.ndarray[str]|PyArrowTable|PlSeries|dict[str:PlSeries]|list[dict[str:str]]|str:
         def K(X, N):
@@ -149,19 +215,19 @@ class PauliMatrix:
                     when(
                         ((col(f"{j}Real")!=0) & (col(f'{j}Complex') == 0))
                     ).then(
-                        col(f"{j}Real").cast(String)+f' {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
+                        plform("{}s", col(f"{j}Real").round_sig_figs(3))+f' {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
                     ).when(
                         ((col(f"{j}Real")!=0) & (col(f'{j}Complex') > 0))
                     ).then(
-                        '('+col(f"{j}Real").cast(String)+'+'+col(f'{j}Complex').cast(String)+f'i) {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
+                        '('+plform("{}", col(f"{j}Real").round_sig_figs(3))+'+'+plform("{}", col(f"{j}Complex").abs().round_sig_figs(3))+f'i) {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
                     ).when(
                         ((col(f"{j}Real")!=0) & (col(f'{j}Complex') < 0))
                     ).then(
-                        '('+col(f"{j}Real").cast(String)+'-'+col(f'{j}Complex').abs().cast(String)+f'i) {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
+                        '('+plform("{}", col(f"{j}Real").round_sig_figs(3))+'-'+plform("{}", col(f"{j}Complex").abs().round_sig_figs(3))+f'i) {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
                     ).when(
                         ((col(f"{j}Real")==0) & (col(f'{j}Complex') != 0))
                     ).then(
-                        col(f'{j}Complex').abs().cast(String)+f'i {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
+                        plform("{}", col(f"{j}Complex").round_sig_figs(3))+f'i {j}_'+'{'+col('HilbertSpace').cast(String)+'}'
                     )
                 ).alias(j)
             )
@@ -270,33 +336,59 @@ class PauliMatrix:
             b[...,2]*=-1
             return PauliMatrix(b, self.coefs.clone())
     
-    def Diagonalize(self, inplace:bool = False) -> None|Self:
-        pass
+    def type_check(self, b:Self) -> bool:
+        assert (isinstance(b,PauliMatrix)), TypeError('Must be PauliMatrix')
+        return True
     
-    def getU(self, inplace:bool = False) -> None|Self:
-        pass
-   
-    def expm(self) -> Self:
-        return
-
-
-
+    def to(self,*args, inplace:bool = True, **kwargs) -> None|Self:
+        basis = self.basis.to(*args,**kwargs)
+        coefs = self.coefs.to(*args,**kwargs)
+        if(inplace):
+            self.basis = basis
+            self.coefs = coefs
+            if('device' in kwargs):
+                self.device = kwargs['device']
+            if('dtype' in kwargs):
+                self.dtype = kwargs['dtype']
+        else:
+            return PauliMatrix(basis,coefs=coefs, is_zero= self.is_zero, dtype=self.dtype, device=self.device)
+     
+    def clone(self) -> Self:
+        return PauliState(self.basis.clone(), self.coefs.clone(), dtype=self.dtype, device=self.device)
 
 class PauliState(State):
-    def __init__(self, basis:torch.Tensor, objTp:str = 'ket') -> Self:
+    def __init__(self, basis:torch.Tensor, coefs:torch.Tensor, objTp:str = 'ket', dtype:torch.dtype= torch.complex128, device:torch.device='cpu') -> Self:
         super(State,self).__init__()
-        assert isinstance(basis, torch.Tensor) , TypeError('Basis Must be a torch Tensor with and basis.shape[1] = 2 and len(basis.shape) == 2')
-        self.basis:torch.Tensor = basis
-        self.objTp = objTp
+        self.set_obj_tp(objTp)
+        assert  isinstance(coefs,torch.Tensor) and isinstance(basis, torch.Tensor), TypeError('Must be Tensor type ')
+        self.dtype = dtype
+        self.device = device
+        match (len(coefs.shape), len(basis.shape)):
+            case (1, 3):
+                assert (coefs.shape[0] == basis.shape[0]), RuntimeError('coefs.shape[0] == basis.shape[0] ')
+            case (1, 2):
+                assert coefs.shape[0] == 1, RuntimeError('Incompatible shapes for basis.shape = {base}, coefs.shape = {coef}'.format(base = basis.shape, coef=coefs.shape))
+                basis = basis.reshape([1, *basis.shape])
+            case (0, 2):
+                basis = basis.reshape([1, *basis.shape])
+                coefs = coefs.reshape([1])
+            case (0,3):
+                assert basis.shape[0] ==1, RuntimeError('Incompatible shapes for basis.shape = {base}, coefs.shape = {coef}'.format(base = basis.shape, coef=coefs.shape))
+                coefs = coefs.reshape([1])
+            case _:
+                raise RuntimeError('Incompatible shapes for basis.shape = {base}, coefs.shape = {coef}'.format(base = basis.shape, coef=coefs.shape))
+        
+        self.basis:torch.Tensor = basis.to(dtype = dtype, device = device)
+        self.coefs:torch.Tensor = coefs.to(dtype= dtype, device = device)
         return
     
     def normalize(self, inplace:bool = True) -> None|Self:
-        N = (self.basis * self.basis.conj()).sum().sqrt()
+        N = ((self.basis * self.basis.conj()).sum(dim = -1).prod(dim = -1) @ (self.coefs.conj() * self.coefs)).sqrt()
         if(inplace):
-            self.basis /= N
-            return
+            self.coefs /= N
+            return 
         else:
-            return PauliState(self.basis/N)
+            return PauliState(self.basis, self.coefs/N)
     
     def __mul__(self, B:Self|torch.Tensor|PauliMatrix) -> Self|torch.Tensor:
         match B:
@@ -319,17 +411,19 @@ class PauliState(State):
     def __add__(self, B:Self) -> Self:
         assert isinstance(B,PauliState), TypeError('Must be PauliState Object')
         assert B.objTp == self.objTp,  TypeError(f'Must be PauliState objTp should should match got {self.objTp} != {B.objTp}')
+        raise NotImplementedError('Not Yet implemented for PauliState + PauliState')
         return PauliState(self.basis+B.basis, objTp= self.objTp)
     
     def __radd__(self, B:Self) -> Self:
         assert isinstance(B,PauliState), TypeError('Must be PauliState Object')
         assert B.objTp == self.objTp,  TypeError(f'Must be PauliState objTp should should match got {self.objTp} != {B.objTp}')
+        raise NotImplementedError('Not Yet implemented for PauliState + PauliState')
         return PauliState(self.basis+B.basis, objTp= self.objTp)
     
     def __matmul__(self, B:Self|PauliMatrix) -> Self|torch.Tensor:
         match B:
             case B if isinstance(B, PauliMatrix):
-                return PauliState(doMulStateMat(B.basis, B.coefs, self.basis), objTp=self.objTp)
+                return B.__rmatmul__(self)
             case B if isinstance(B, PauliState):
                 return doMulStateState(B.basis, B.objTp, self.basis, self.objTp)
             case _:
@@ -338,7 +432,7 @@ class PauliState(State):
     def __rmatmul__(self, B:Self|PauliMatrix) -> Self|torch.Tensor:
         match B:
             case B if isinstance(B, PauliMatrix):
-                return PauliState(doMulStateMat(B.basis, B.coefs, self.basis), objTp=self.objTp)
+                return B.__matmul__(self)
             case B if isinstance(B, PauliState):
                 return doMulStateState(B.basis, B.objTp, self.basis, self.objTp)
             case _:
@@ -347,11 +441,13 @@ class PauliState(State):
     def __sub__(self, B:Self) -> Self:
         assert isinstance(B,PauliState), TypeError('Must be PauliState Object')
         assert B.objTp == self.objTp,  TypeError(f'Must be PauliState objTp should should match got {self.objTp} != {B.objTp}')
+        raise NotImplementedError('Not Yet implemented for PauliState + PauliState')
         return PauliState(self.basis-B.basis, objTp=self.objTp) 
     
     def __rsub__(self, B:Self) -> Self:
         assert isinstance(B,PauliState), TypeError('Must be PauliState Object')
         assert B.objTp == self.objTp,  TypeError(f'Must be PauliState objTp should should match got {self.objTp} != {B.objTp}')
+        raise NotImplementedError('Not Yet implemented for PauliState + PauliState')
         return PauliState(B.basis-self.basis, objTp=self.objTp) 
     
     def __div__(self, B:torch.Tensor) -> Self:
@@ -366,5 +462,19 @@ class PauliState(State):
         else:
             return PauliState(self.basis.conj(), objTp= {'ket':'bra', 'bra':'ket'}[self.objTp]) 
     
-        
-
+    def clone(self) -> Self:
+        return  PauliState(self.basis.clone(), self.coefs.clone(), objTp=self.objTp, dtype=self.dtype, device=self.device)
+    
+    def to(self,*args, inplace:bool = True, **kwargs) -> None|Self:
+        basis = self.basis.to(*args,**kwargs)
+        coefs = self.coefs.to(*args,**kwargs)
+        if(inplace):
+            self.basis = basis
+            self.coefs = coefs
+            if('device' in kwargs):
+                self.device = kwargs['device']
+            if('dtype' in kwargs):
+                self.dtype = kwargs['dtype']
+        else:
+            return PauliState(basis,coefs=coefs, objTp=self.objTp, dtype=self.dtype, device=self.device)
+    

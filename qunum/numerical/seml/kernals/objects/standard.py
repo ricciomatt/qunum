@@ -20,9 +20,8 @@ from ...nn import optimizers as optimizer
 
 
 from ....mathematics.numerics.grid_space import ord_to_grid, construct_cont_gen
-import nltk.tokenize as tokenizer
 from ...data.preprocessing.scaling import NormScaler
-from ....mathematics.numerics import integrators_
+from ....mathematics.numerics import integrators_dep as integrators_
 
 from typing import Callable
 from numpy.typing import NDArray

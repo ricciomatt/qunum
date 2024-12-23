@@ -1,6 +1,7 @@
 from plotly.offline import iplot, iplot_mpl, init_notebook_mode
 from plotly import express as px, graph_objects as go, subplots as plty_sub, io as pio
-def setup_plotly(default_template:str = 'presentation', nb:bool = True)->None:
+
+def setup_plotly(default_template:str = 'presentation', online:bool = True)->None:
     custom_template = {
     "layout": {
         "font": {
@@ -51,7 +52,7 @@ def setup_plotly(default_template:str = 'presentation', nb:bool = True)->None:
     pio.templates.default = 'custom_template'
 
     pio.templates.default = default_template
-    init_notebook_mode(nb)
+    init_notebook_mode(online)
     return
 
 

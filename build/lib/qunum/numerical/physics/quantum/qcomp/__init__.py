@@ -1,2 +1,1 @@
-from .algorithms import *
-from .trotterize import ProductFormula
+from . import dense, sparse

@@ -4,9 +4,8 @@ from torch.nn import Module, Linear, Sigmoid, Tanh, Softmax, Conv1d, Sequential,
 from torch import Tensor
 from torch.linalg import matrix_exp as expm
 from typing import Callable
-from .....mathematics import einsum
 from .....mathematics.algebra import ad
-from .....physics.quantum.qobjs.dense.core.torch_qobj import TQobj
+from .....physics.quantum.qobjs.dense import TQobj, einsum
 
 class MagnusInspired(Module):
     def __init__(self, 

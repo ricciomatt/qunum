@@ -1,10 +1,4 @@
-from ..physics.quantum.qobjs.dense.core.qobj_einsum import einsum
 from .autograd import *
-from . import algebra
-from . import random
-from . import combintorix
+from . import algebra, combintorix, random, stats, special_functions
 from .tensors import levi_cevita_tensor
-from . import numerics
 from .numerics import integrators
-from . import stats
-from . import special_functions

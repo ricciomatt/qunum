@@ -10,10 +10,12 @@ from sympy import kronecker_product as kron
 from torch import Tensor
 from typing import Iterable
 from itertools import combinations
-class NdSQobj(np.ndarray):
+
+class NpQobj(np.ndarray):
     def __init__(self, *args):
-        super(NdSQobj,self).__init__()
+        super(NpQobj,self).__init__()
         pass
+
 class SQobj(Matrix):
     def __init__(self, 
                  *args,

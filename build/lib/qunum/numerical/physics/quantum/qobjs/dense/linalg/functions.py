@@ -1,6 +1,6 @@
 from torch import  jit, Tensor, tensor, e
 from .core import retTQobj, retTQobjTensor, retTensor, fofMatrix
-from ..torch_qobj import TQobj
+from ..core.torch_qobj import TQobj
 from torch.linalg import matrix_exp, matrix_norm, matrix_power, eig as teig, eigh as teigh, eigvals as teigvals, eigvalsh as teigvalsh, slogdet as tslogdet, det as tdet, cholesky as tcholesky, inv
 from torch import tensordot, diag_embed
 
@@ -27,7 +27,7 @@ def diagnolize_operator(A:TQobj,*args, ret_unitary:bool = True, **kwargs,)->tupl
             v, U = eig(A)
         else:
             v, U = eigh(A)
-        return TQobj(diag_embed(v), meta=A._metadata), U
+        return TQobj(diag_embed(v), meta=A._metadata), U.T.set_meta(meta= A._metadata)
     else:
         if(A._metadata.is_hermitian):
             v = eigvals(A)
@@ -45,7 +45,7 @@ def logm(A:TQobj, **kwargs)->TQobj:
 
 @fofMatrix(save_eigen=True, recompute=False)
 def logmbase(A:TQobj, *args, base:Tensor = tensor(e), **kwargs)->TQobj:
-    return A.log()/base.log
+    return A.log()/base.log()
 
 @fofMatrix(save_eigen=False, recompute=False)
 def inversem(A:TQobj, *args, **kwargs):

@@ -2,7 +2,7 @@ from typing import Self, Iterable
 from sympy import Symbol
 import numpy as np 
 import polars as pl
-from .......combintorix import YieldArgCombos
+from .......combintorix import EnumerateArgCombos
 from .......tensors import levi_cevita_tensor
 class MatrixBasis:
     def __init__(self,):
@@ -43,7 +43,7 @@ class MatMul:
             )
 
         self.Data = pl.LazyFrame(
-            YieldArgCombos(['I', 'X', 'Y', 'Z'], ['I', "X", "Y", 'Z'], ret_tensor = False).__iter__(), 
+            EnumerateArgCombos(['I', 'X', 'Y', 'Z'], ['I', "X", "Y", 'Z'], ret_tensor = False).__iter__(), 
             schema = {'column_0':pl.String, 'column_1':pl.String}
         ).rename({'column_0':'basis', 'column_1':'basis(1)'}).with_columns(
             pl.concat_str('basis', 'basis(1)').replace(Mapping, return_dtype=pl.Struct({'basisNew':pl.String, 'coef_realNew':pl.Float64, 'coef_imagNew':pl.Float64})).alias('res')

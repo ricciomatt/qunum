@@ -1,1 +1,1 @@
-from .algorithms import *
+from . import dense, sparse

@@ -141,3 +141,4 @@ class HadamardAttention(torch.nn.Module):
     
     def forward(self, x:tensor)->tensor:
         return self.ApplyAttention(x)
+    

@@ -1,3 +1,4 @@
 from . import qcomp
 from .qobjs import *
-from . import operators
+from .operators import dense as dense_operators 
+from .operators import sparse as sparse_operators
