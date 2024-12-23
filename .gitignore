@@ -1,4 +1,5 @@
 *test*
 *cpp*
 *.rs*
-build/*
+build
+*.egg-info
