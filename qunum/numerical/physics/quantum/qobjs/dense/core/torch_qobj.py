@@ -473,11 +473,11 @@ class TQobj(Tensor):
                 return ventropy(self, epsi = von_epsi)
                  
     def polarization_vector(self, particle:int)->torch.Tensor:
-        from ......mathematics.algebra.representations import su
+        from ......mathematics.algebra import sun
         assert self._metadata.obj_tp == 'operator', TypeError('Must be an operator')
         assert self._metadata.dims[particle] == 2, ValueError('PVec Support Limited to only the SU(2) case for now')
         p = self.Tr(keep=particle).to_tensor().to(self.dtype)
-        s = su.get_pauli(to_tensor= True).to(self.dtype)
+        s = sun.get_pauli(to_tensor= True).to(self.dtype)
         shp = self.shape
         if(len(shp)>3):
             raise TypeError('Only implemented for 2 and 3d opers')
@@ -516,10 +516,10 @@ class TQobj(Tensor):
         return rhoA.entropy() + rhoB.entropy() - rhoAB.entropy()
     
     def pauli_decomposition(self, ret_sig:bool = False, keep_all:bool = False)->tuple[dict|object]|tuple[dict]:
-        from ......mathematics.algebra.representations import su
+        from ......mathematics.algebra import sun
         if(self._metadata.hilbert_space_dims != 2):
             raise NotImplementedError('Only implemented for 2d hilbert spaces')
-        sig = TQobj(su.get_pauli(to_tensor=True), n_particles=1)
+        sig = TQobj(sun.get_pauli(to_tensor=True), n_particles=1)
         ix = product(*(range(4) for i in range(self._metadata.n_particles)))
         A = {}
         for i,x in enumerate(ix):

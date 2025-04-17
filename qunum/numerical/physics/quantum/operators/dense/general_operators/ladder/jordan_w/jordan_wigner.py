@@ -1,6 +1,6 @@
 from typing import Any, Self, Generator, Callable
 from ......qobjs import TQobj, direct_prod
-from ........mathematics.algebra.representations.su import get_pauli
+from ........mathematics.algebra.sun import get_pauli
 from torch import stack, dtype as torchDtype, complex128, device as torchDevice
 
 class JordanWignerSu2:

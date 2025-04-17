@@ -3,13 +3,29 @@ from torch import Tensor
 from ...data import DataLoader
 from ...metrics.numerical import ModelTracker
 from tqdm import tqdm
-from typing import Callable, Any
+from typing import Callable, Any, Generator, Self
 from ...metrics.numerical import mean_accuracy
 import numpy as np
 from copy import deepcopy
+from inspect import getfullargspec
+from warnings import warn
+
 class PhysicsDataGenerator:
     def __init__(self) -> None:
         pass
+class LossFunction:
+    def __init__(
+        self, 
+        Lf:Callable[[*tuple[torch.Tensor], ], torch.Tensor],
+        *args:tuple[str],
+        **kwargs:dict[str:str]
+    )->Self:
+        self.Lf:Callable[[torch.Tensor],torch.Tensor] = Lf
+        return
+    def __call__(self)->torch.Tensor:
+        return
+    def forward(self)->torch.Tensor:
+        return
 OptimClosureMap = {torch.optim.LBFGS:True}
 
 class GradDescentTrain:
@@ -19,7 +35,6 @@ class GradDescentTrain:
                  Optimizers:torch.optim.Optimizer|tuple[torch.optim.Optimizer],
                  epochs:int = int(1e1), 
                  batch_steps:int= 1,
-                 device:int|str = 0, 
                  validFreq:int = 10,
                  prnt_:bool=False,
                  prntFreq:int = 100,
@@ -28,16 +43,16 @@ class GradDescentTrain:
                  dataLoaderValid:DataLoader|PhysicsDataGenerator|None = None,
                  validationUpdate:Callable|None = None,
                  loss_args:tuple[str] = None,
-                 stop_threshold:float|None = None
-                 )->None:
+                 stop_threshold:float|None = None,
+                 )->Self:
         
         #Model and Loss stuff
         self.Model = Model
-        self.Loss = Loss
         self.stop_threshold = stop_threshold
         #dataLoaderStuff
         self.dataLoader = dataLoader
-        
+        self.set_loss_function(Loss, loss_args=loss_args)
+        self.use_cuda = False
         #Validation Stuff
         self.dataLodaerValid = dataLoaderValid
         self.validationUpdate = validationUpdate
@@ -47,7 +62,7 @@ class GradDescentTrain:
         self.Optimizers = Optimizers
         self.epochs = epochs
         self.batch_steps = batch_steps
-        self.device = device
+        self.device = self.Model.device
         
         #initialization
         self.tot_epochs = 0
@@ -60,35 +75,6 @@ class GradDescentTrain:
         self.prntFreq = prntFreq       
         self.track = bool(modelTracker is None)
         self.validate = bool(validationUpdate is not None)
-        
-        if(loss_args is not None): 
-            self.loss_args = loss_args
-        else: 
-            from inspect import getfullargspec
-            args_map = {'input':'yh', 'target':'y'}
-            try:
-                self.loss_args = (
-                    A 
-                        if(A not in args_map) 
-                        else 
-                    args_map[A] 
-                    for 
-                        A in getfullargspec(self.Loss.forward).args
-                        if 
-                            A != 'self'
-                )
-            except:
-                
-                self.loss_args = (
-                    A 
-                        if(A not in args_map) 
-                        else 
-                    args_map[A] 
-                    for 
-                        A in getfullargspec(self.Loss).args
-                        if 
-                            A != 'self'
-                )
         if(is_iterable(Optimizers)): 
             self.Optimizers = Optimizers
             self.use_closure = tuple(map(lambda o: OptimClosureMap[type(o)] if(type(o) in OptimClosureMap) else False, self.Optimizers))
@@ -101,6 +87,42 @@ class GradDescentTrain:
             self.modelTracker = ModelTracker({}, track_loss=True)
         return 
     
+    def set_loss_function(self, Loss:LossFunction, loss_args:tuple[str]|None = None, **kwargs)->None:
+        assert(callable(Loss)), 'Loss Function must be callable'
+        self.Loss :LossFunction= Loss
+        def get_loss_args(Loss:LossFunction, loss_args:tuple[str]|None )->Generator[str, None, None]:
+            match loss_args:
+                case None:
+                    args_map = {'input':'estimator'}
+                    if('forward' in dir(Loss)):
+                        attr = 'forward'
+                    else:
+                        attr = '__call__'
+                    loss_args = (
+                        A 
+                            if(A not in args_map) 
+                            else 
+                        args_map[A] 
+                        for 
+                            A in getfullargspec(getattr(Loss, attr)).args
+                            if 
+                                A != 'self'
+                    )
+                    return loss_args
+                case tuple():
+                    if(all(map(lambda l: l is str, loss_args))):  
+                        return map(lambda l: str(l), (loss_args))
+                    else:
+                        warn(Warning())
+                        return get_loss_args(Loss, None)
+
+                case list():
+                    return get_loss_args(Loss, tuple(loss_args))
+                case _:
+                    return get_loss_args(Loss, None)
+        self.loss_args:tuple = tuple(get_loss_args(Loss, loss_args))
+        return 
+           
     def reset_iterator(self)->None:
         self.n = 0
         return
@@ -114,7 +136,7 @@ class GradDescentTrain:
     def set_dataLoader(
             self, 
             TrainDataLoader:DataLoader|PhysicsDataGenerator|None
-        )->None:
+    )->None:
         if(TrainDataLoader is None and self.dataLoader is None):
             raise ValueError('Setting None to None')
         self.dataLoader = TrainDataLoader
@@ -165,14 +187,16 @@ class GradDescentTrain:
             del x; del y
         return
     
-    def train(self, 
-              *args, 
-              TrainDataLoader:DataLoader|PhysicsDataGenerator|None = None, 
-              ValidationDataLoader:DataLoader|PhysicsDataGenerator|None = None, 
-              dropdataLoader:bool= False, 
-              epochs:int|None = None,
-              stop_threshold:int|None = None,
-              **kwargs:dict[Any])->ModelTracker:
+    def train(
+            self, 
+            *args, 
+            TrainDataLoader:DataLoader|PhysicsDataGenerator|None = None, 
+            ValidationDataLoader:DataLoader|PhysicsDataGenerator|None = None, 
+            dropdataLoader:bool= False, 
+            epochs:int|None = None,
+            stop_threshold:int|None = None,
+            **kwargs:dict[Any]
+        )->ModelTracker:
         self.Model.to(self.device)
         if(self.dataLoader is None):
             try:
@@ -190,7 +214,6 @@ class GradDescentTrain:
             self.epochs = epochs
         if(stop_threshold is not None):
             self.stop_threshold = stop_threshold
-        
         self.reset_iterator()
         for i,j in tqdm(enumerate(self)):
             pass
@@ -214,24 +237,23 @@ class GradDescentTrain:
 
     
     #Loss Stuff
-    def eval_loss(self, **kwargs:dict[Any])->Tensor:
-        if('yh' in self.loss_args):
-            kwargs['yh'] = self.Model.forward(kwargs['x'])
-        else:
+    def eval_loss(self,x:torch.Tensor, y:torch.Tensor, **kwargs:dict[Any])->Tensor:
+        if('estimator' in self.loss_args):
+            kwargs['input'] = self.Model.forward(x)
+        if('Model' in self.loss_args):
             kwargs['Model'] = self.Model
-        args = (kwargs[a] for i, a in enumerate(self.loss_args))
-        A = self.Loss(*args)
+        A = self.Loss(**kwargs)
         if(isinstance(A, tuple)):
             L = A[0]
             yh = A[1]
         else:
             L = A
             try:
-                yh = kwargs['yh']
+                yh = kwargs['input']
             except:
                 yh = None
         if(self.track):
-            self.modelTracker(kwargs['y'],  yh, L)
+            self.modelTracker(kwargs['target'],  yh, L)
         if(self.stop_threshold is not None):
             if(self.stop_threshold>=L):
                 self.stop_iteration()
@@ -252,7 +274,7 @@ class GradDescentTrain:
                 self.Optimizers[self.o].step(L)
                 self.Optimizers[self.o].zero_grad()
         else:
-            L = self.eval_loss(x = x, y = y)
+            L = self.eval_loss(estimator = x, target = y)
             L.backward()
             with torch.no_grad():
                 self.Optimizers[self.o].step()
@@ -260,10 +282,11 @@ class GradDescentTrain:
         
         return
     
-    
 def is_iterable(O):
     try:
         iter(O)
         return True
     except:
         return False
+    
+    

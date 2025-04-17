@@ -1,9 +1,9 @@
 from .....physics.quantum.qobjs import TQobj
 import torch
 def gamma_matricies(basis = 'dirac', tqobj:bool = True, to_tensor:bool = True, dtype:torch.dtype = torch.complex128, device:int|str = 'cpu')->TQobj|torch.Tensor:
-    from ..su import get_pauli
+    from ...sun import get_pauli
     y = torch.zeros(5,4,4, dtype=dtype, device=device)
-    s = get_pauli(to_tensor=True,dtype=dtype).to(device =device)
+    s = get_pauli(ret_type='tensor', dtype=dtype, device =device)
     match basis:
         case 'dirac':
             y[0, :2, :2] = s[0]

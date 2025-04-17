@@ -1,2 +1,2 @@
-from . import su
+from .. import sun
 from .many_body import *

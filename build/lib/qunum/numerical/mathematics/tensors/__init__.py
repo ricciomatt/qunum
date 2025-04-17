@@ -2,6 +2,7 @@
 import itertools
 import numpy as np
 import torch
+from .lazy import *
 def levi_cevita_tensor(dim, to_tensor:bool = False )->np.ndarray|torch.Tensor:   
     arr=np.zeros(tuple([dim for _ in range(dim)]))
     for x in itertools.permutations(tuple(range(dim))):

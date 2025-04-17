@@ -174,7 +174,7 @@ class PlotIt:
             case None:
                 plot = copy(self.def_plot)
             case _:
-                raise ValueError('Must Provide valid For plot type: {tp} is not valid'.format(tp = tp))
+                plot = copy(self.def_plot)
         plot['name'] = nm
         plot.update(data_in)
         self.data.append(plot)

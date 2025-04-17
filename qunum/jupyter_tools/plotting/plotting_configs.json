@@ -136,7 +136,7 @@
             "xaxis":"x", 
             "yaxis":"y"
         },
-        "plot_polar": {
+        "polar_plot": {
             "type":"scatterpolar",
             "subplot":"polar"
         },

@@ -1,5 +1,5 @@
 from .....qobjs.dense.core.torch_qobj import TQobj, direct_prod
-from .......mathematics.algebra.representations.su import get_pauli
+from .......mathematics.algebra.sun import get_pauli
 from numpy import cos, sin
 def rn(theta, n_vec, n_particles:int)->TQobj:
     sigma = [TQobj(i, n_particles =1, hilbert_space_dims = 2) for i  in get_pauli(include_identity=True)]

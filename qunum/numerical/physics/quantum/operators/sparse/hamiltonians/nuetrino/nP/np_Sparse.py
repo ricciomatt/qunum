@@ -11,7 +11,7 @@ from ......qobjs.dense.instantiate import zeros_from_context, eye, eye_like
 from ........mathematics.combintorix import EnumerateArgCombos, EnumUniqueUnorderedIdx
 from ........mathematics.special_functions import dirac_delta
 from ....ladder.jordan_winger import LazyJordanWigner
-from ......qobjs.sparse_su2 import PauliMatrix, PauliState, mk_sparse_basis
+from ......qobjs.sparse_su2_dep import SU2Matrix, SU2State, mk_sparse_basis
 
 class SparseNP:
     def __init__(
@@ -69,7 +69,7 @@ class SparseNP:
             EnumerateArgCombos(*(torch.arange(self.p.shape[0]) for i in range(4)))()
         )
 
-    def __call__(self, t:torch.Tensor)->PauliMatrix:
+    def __call__(self, t:torch.Tensor)->SU2Matrix:
         m =  self.u(t).to(dtype = self.Hvv.dtype, device = self.Hvv.device)
         return qein('A, ij -> Aij', torch.ones_like(m), self.Hk) - qein('A, ij -> Aij', m, self.Hvv)
     

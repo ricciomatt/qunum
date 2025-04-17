@@ -1,6 +1,7 @@
 import torch 
 from numpy.typing import NDArray
 from .representations import *
+from .sun import su_n_generate
 from . import lazy_algebra
 
 def commutator(A:torch.Tensor|NDArray, B:torch.Tensor|NDArray)->torch.Tensor|NDArray:

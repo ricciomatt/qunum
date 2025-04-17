@@ -1,7 +1,7 @@
 import numpy as np 
 import numpy.typing as npt
 import torch
-from ......mathematics.algebra.representations.su import get_pauli
+from ......mathematics.algebra.sun import get_pauli
 
 
 

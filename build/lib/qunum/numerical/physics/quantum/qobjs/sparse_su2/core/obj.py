@@ -7,6 +7,7 @@ from polars import from_numpy as pl_from_numpy, concat_str, col, when, lit, Int3
 from pandas import DataFrame as PdDataFrame
 from pyarrow import Table as PyArrowTable
 from warnings import warn
+from typing import Callable
 
 class State:
     def __init__(self, objTp:str = 'ket') -> Self:
@@ -19,7 +20,13 @@ class State:
 
 
 class PauliMatrix:
-    def __init__(self, basis:torch.Tensor, coefs:torch.Tensor, is_zero:bool=False, dtype:torch.dtype = torch.complex128, device:torch.device = 'cpu')->Self:
+    def __init__(
+        self, basis:torch.Tensor, coefs:torch.Tensor, 
+        time_dependence:Callable[[torch.Tensor, torch.Tensor], torch.Tensor]|None = None, 
+        spatial_projection:Callable[[torch.Tensor], torch.Tensor]|None = None, 
+        is_zero:bool=False, 
+        dtype:torch.dtype = torch.complex128, 
+        device:torch.device = 'cpu')->Self:
         assert (basis is None and coefs is None) or isinstance(coefs,torch.Tensor) and isinstance(basis, torch.Tensor), TypeError('Must be Tensor type ')
         self.dtype = dtype
         self.device = device
@@ -357,7 +364,14 @@ class PauliMatrix:
         return PauliState(self.basis.clone(), self.coefs.clone(), dtype=self.dtype, device=self.device)
 
 class PauliState(State):
-    def __init__(self, basis:torch.Tensor, coefs:torch.Tensor, objTp:str = 'ket', dtype:torch.dtype= torch.complex128, device:torch.device='cpu') -> Self:
+    def __init__(
+        self, basis:torch.Tensor, coefs:torch.Tensor, 
+        time_dependence:Callable[[torch.Tensor, torch.Tensor], torch.Tensor], 
+        spatial_projection:Callable[[torch.Tensor, torch.Tensor], torch.Tensor], 
+        objTp:str = 'ket',
+        dtype:torch.dtype= torch.complex128, 
+        device:torch.device='cpu'
+    ) -> Self:
         super(State,self).__init__()
         self.set_obj_tp(objTp)
         assert  isinstance(coefs,torch.Tensor) and isinstance(basis, torch.Tensor), TypeError('Must be Tensor type ')
@@ -478,3 +492,5 @@ class PauliState(State):
         else:
             return PauliState(basis,coefs=coefs, objTp=self.objTp, dtype=self.dtype, device=self.device)
     
+    def __repr__(self,)->str:
+        return f"\\{self.objTp}{{\\psi}} = PauliState(basis = \n{self.basis.__repr__()},\ncoefs = \n{self.coefs.__repr__()},\nshape={self.basis.shape[:-2]})"

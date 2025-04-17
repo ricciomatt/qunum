@@ -5,7 +5,7 @@ from warnings import warn
 from copy import copy
 
 class EnumerateArgCombos:
-    def __init__(self, *args:tuple[torch.Tensor|range], ret_tensor:bool = True, ignore_arange:bool = False)->Self:
+    def __init__(self, *args:tuple[torch.Tensor|range], ret_tensor:bool = True, ignore_arange:bool = False, dim:int|None = None)->Self:
         self.idx:torch.Tensor = torch.from_numpy(np.array([a.stop if(isinstance(a,range)) else len(a) for a in args]))
         self.cix:torch.Tensor = torch.zeros(self.idx.shape[0], dtype = torch.int32)
         self.args:tuple[torch.Tensor] = args
@@ -14,7 +14,6 @@ class EnumerateArgCombos:
         if(ret_tensor): 
             if(not ignore_arange):
                 self.args = self.getArange()
-            
             def getIdxs(x:torch.Tensor):
                 N = x.clone()
                 x = torch.ones(self.idx.shape[0], dtype = torch.int64)*x
@@ -22,8 +21,10 @@ class EnumerateArgCombos:
                 for j in range(-2, -self.idx.shape[0]-1, -1):
                     x[j] = (N//self.idx[j+1:].prod())%self.idx[j]
                 return x
-            self.getTorchTensor:Callable[[torch.Tensor], torch.Tensor]= torch.vmap(getIdxs)            
+            self.getTorchTensor:Callable[[torch.Tensor], torch.Tensor]= torch.vmap(getIdxs)   
+        self.dim = dim         
         return 
+    
     def getArange(self)->bool:
         def convertRanges(x:torch.Tensor|range|np.ndarray):
             if(isinstance(x, range)):
@@ -158,6 +159,12 @@ class EnumerateArgCombos:
     
     def __tensor__(self, dim:int|Iterable[int]|None = None, rawIdx:bool=False)->torch.Tensor:
         assert self.ret_tensor, 'Must Be tensor arguments and enable ret tensor, ie. EnumerateArgCombos(Tensor1,Tensor2,..., ret_tensor = True)'
+        match (self.dim, dim):
+            case (sD, D) if sD is not None and D is None:
+                dim = copy(self.dim)
+            case _:
+                pass
+
         if(rawIdx or self.ignore_arange):
             if(dim is None):
                 return self.getTorchTensor(torch.arange(0,self.idx.prod(), step = 1))
@@ -177,7 +184,11 @@ class EnumerateArgCombos:
                     
                         else:
                             return torch.stack([self.args[d][K[:,d]] for d in dim], ).swapdims(dim0=0, dim1=1)
-
+    def set_dim(self, dim:int|None=None ,inplace:bool = True)->None|Self:
+        if(inplace):
+            self.dim = dim
+        else:
+            return EnumerateArgCombos(*self.args,ret_tensor=self.ret_tensor, ignore_arange=self.ignore_arange, dim = dim)
 
 
 
