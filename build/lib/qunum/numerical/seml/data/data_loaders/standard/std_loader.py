@@ -8,8 +8,7 @@ from typing import Callable
 def make_data_loader(x, y, batch_size:int = None, batch_pct:float = .1, pipeline:Pipeline = None, randomize:bool = True, ax_data:int = 0, requires_grad:bool = False, ToTesnor:bool = True):
     if(batch_size is None):
         batch_size = int(batch_pct*x.shape[0])
-    return DataLoader(GenDataSet(x,y,pipeline=pipeline, randomize=randomize, ax_data=ax_data), batch_size=batch_size, shuffle=randomize, requires_grad = requires_grad, ToTesnor = ToTesnor)
-    
+    return DataLoader(GenDataSet(x,y,pipeline=pipeline, randomize=randomize, ax_data=ax_data, ToTensor=ToTesnor), batch_size=batch_size, shuffle=randomize, requires_grad = requires_grad,)
 
 class GenDataSet(Dataset):
     def __init__(self, x, y, pipeline:Pipeline = None, randomize:bool=True, ax_data:int = 0, requires_grad:bool = False, ToTensor:bool = True):

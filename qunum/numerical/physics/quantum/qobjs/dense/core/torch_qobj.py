@@ -425,11 +425,11 @@ class TQobj(Tensor):
             combs.extend(combinations(ix,i))
         return np.array(combs)
         
-    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, reorder:bool = False):
+    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, reorder:bool = False)->torch.Tensor|Self:
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
         if(tr_out is None and keep is None):
-            return self.diagonal(dim1=-2, dim2=-1).sum(dim=-1)
+            return self.diagonal(dim1=-2, dim2=-1).sum(dim=-1).to_tensor()
         else:
             if(tr_out is not None):
                 tr_out = self._metadata.check_particle_ixs(tr_out)

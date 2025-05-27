@@ -58,6 +58,7 @@ qunum/numerical/mathematics/algebra/representations/many_body/__init__.py
 qunum/numerical/mathematics/algebra/representations/many_body/tensor_product_space.py
 qunum/numerical/mathematics/algebra/sun/__init__.py
 qunum/numerical/mathematics/algebra/sun/representations.py
+qunum/numerical/mathematics/algebra/sun/structure.py
 qunum/numerical/mathematics/autograd/__init__.py
 qunum/numerical/mathematics/autograd/grad_obj.py
 qunum/numerical/mathematics/autograd/grad_qobj.py
@@ -72,6 +73,11 @@ qunum/numerical/mathematics/combintorix/generators/enum_np.py
 qunum/numerical/mathematics/combintorix/generators/enum_unordered.py
 qunum/numerical/mathematics/combintorix/generators/indicies.py
 qunum/numerical/mathematics/combintorix/generators/unique.py
+qunum/numerical/mathematics/linalg/__init__.py
+qunum/numerical/mathematics/linalg/functionsOfMatricies/__init__.py
+qunum/numerical/mathematics/linalg/functionsOfMatricies/parlette.py
+qunum/numerical/mathematics/linalg/scipy_wrapper/__init__.py
+qunum/numerical/mathematics/linalg/scipy_wrapper/wrapper.py
 qunum/numerical/mathematics/numerics/__init__.py
 qunum/numerical/mathematics/numerics/grid_space.py
 qunum/numerical/mathematics/numerics/integrators_dep.py
@@ -94,6 +100,8 @@ qunum/numerical/mathematics/stats/gen_stats.py
 qunum/numerical/mathematics/stats/filtering/__init__.py
 qunum/numerical/mathematics/stats/filtering/pds.py
 qunum/numerical/mathematics/stats/filtering/pls.py
+qunum/numerical/mathematics/stochastic/__init__.py
+qunum/numerical/mathematics/stochastic/bound.py
 qunum/numerical/mathematics/tensors/__init__.py
 qunum/numerical/mathematics/tensors/lazy/__init__.py
 qunum/numerical/mathematics/tensors/lazy/fop/__init__.py
@@ -137,6 +145,9 @@ qunum/numerical/physics/cosmology/__init__.py
 qunum/numerical/physics/cosmology/power_specturm/__init__.py
 qunum/numerical/physics/cosmology/power_specturm/camb_generator.py
 qunum/numerical/physics/quantum/__init__.py
+qunum/numerical/physics/quantum/ising/__init__.py
+qunum/numerical/physics/quantum/ising/core/__init__.py
+qunum/numerical/physics/quantum/ising/core/obj.py
 qunum/numerical/physics/quantum/operators/__init__.py
 qunum/numerical/physics/quantum/operators/dense/__init__.py
 qunum/numerical/physics/quantum/operators/dense/dir_prod.py
