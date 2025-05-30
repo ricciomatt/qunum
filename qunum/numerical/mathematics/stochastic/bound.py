@@ -23,7 +23,7 @@ class BoundStochasticWalker:
         self.A = torch.empty((self.NumSteps, *A0.shape), dtype = A0.dtype, device= A0.device)
         self.A[0] = A0
         self.realWalk = realWalk
-    
+        self.shape = self.A.shape
         return
     def __iter__(self)->Generator[torch.Tensor, None, None]:
         return self
@@ -49,3 +49,15 @@ class BoundStochasticWalker:
         
     def __getitem__(self, n)->torch.Tensor:
         return self.A[n]
+    
+    def __repr__(self)->str:
+        return """BoundStochasticWalker(mu={mu}, sigma={sigma}, shape={shape}, itered_through={itered_through}, bounds=({a},{b}), distribution={R},\\ A={A}\\)""".format(
+            mu = str(self.mu), 
+            sigma = str(self.sigma), 
+            shape=str(self.shape),
+            itered_through = str(self.itered_through),
+            R = self.R,
+            A=str(self.A),
+            b = str(self.b),
+            a = str(self.a)
+        )

@@ -188,7 +188,7 @@ class PlotIt:
         self.frames.append([ self.chk_data(data_in=d) for d in data])
         return
 
-    def update_animation(self, **data:list[list[dict]])->None:
+    def update_animation(self, *data:list[list[dict]])->None:
         for d in data:
             self.add_frame(data = d)
         return 
@@ -239,6 +239,12 @@ class PlotIt:
     def __repr__(self)->str:
         self.show()
         return ''
+    
+    def reset(self)->None:
+        self.data:list[dict] = []
+        self.frames:list[list[dict]] = [[]]
+        self.curve_names = set({})
+        return
 
 def plotly_configs()->dict[str:dict, str:dict, str:dict]:
     with open('/'.join(os.path.abspath(__file__).split('/')[:-1])+'/plotting_configs.json', 'r') as k:
