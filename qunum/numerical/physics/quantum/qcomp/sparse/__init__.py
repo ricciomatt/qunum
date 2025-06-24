@@ -1,2 +1,2 @@
-from .gateset import *
-from .circuit import SuQCirquit
+from .qubits.gateset import *
+from .qubits.circuit import SuQCirquit

@@ -3,7 +3,7 @@ import torch
 import polars as pl
 from typing import Iterable, Sequence
 class NormScaler:
-    def __init__(self, df:pl.DataFrame, x_cols:np.ndarray|pl.col|Iterable|Sequence|list=None, min_:int = 1e-6, max_:int = 1, **kwargs):
+    def __init__(self, df:pl.DataFrame, x_cols:np.ndarray|pl.Expr|Iterable|Sequence|list=None, min_:int = 1e-6, max_:int = 1, **kwargs):
         if('cols' in kwargs and x_cols is None):
             x_cols = kwargs['cols']
         elif(x_cols is None):

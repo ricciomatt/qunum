@@ -60,7 +60,7 @@ class MeanField:
         return  
     
     def __call__(self, t:torch.Tensor) -> torch.Tensor:
-        return self.O(self.H0, self.H1, t, self.r0, self.Rv, self.v, self.mu0)
+        return TQobj(self.O(self.H0, self.H1, t, self.r0, self.Rv, self.v, self.mu0), n_particles=int(self.N), hilbert_space_dims=self.flavors)
     
     def to(self, device:str|int):
         self.device = device

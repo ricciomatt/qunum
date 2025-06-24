@@ -1,7 +1,27 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: qunum
 Version: 1.0
 Summary: This is the physik package for PINN's, Quantum Numerics and Quantum Symbolic Calculations.
 Author: Matthew Riccio
 Author-email: riccio_matt@outlook.com
 License-File: LICENSE
+Requires-Dist: torch
+Requires-Dist: torchviz
+Requires-Dist: torchvision
+Requires-Dist: complexPyTorch
+Requires-Dist: numpy
+Requires-Dist: polars
+Requires-Dist: plotly
+Requires-Dist: sympy
+Requires-Dist: pandas
+Requires-Dist: qutip
+Requires-Dist: matplotlib
+Requires-Dist: scikit-learn
+Requires-Dist: imblearn
+Requires-Dist: numba
+Requires-Dist: tqdm
+Dynamic: author
+Dynamic: author-email
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary

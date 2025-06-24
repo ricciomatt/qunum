@@ -1,6 +1,6 @@
 from .representations import su_n_generate
 import torch
-class SUAlgebra:
+class SUConnection:
     def __init__(self, n:int = 3 ):
         T = su_n_generate(n, include_identity = False, ret_type='tensor')
         self.n = n

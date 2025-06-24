@@ -17,7 +17,7 @@ class BoundStochasticWalker:
         self.dt = torch.tensor(dt)
         self.R = R
         self.a, self.b = boundaries
-        self. n = 0
+        self.n = 0
         self.NumSteps = NumSteps
         self.itered_through = 0
         self.A = torch.empty((self.NumSteps, *A0.shape), dtype = A0.dtype, device= A0.device)
@@ -61,3 +61,10 @@ class BoundStochasticWalker:
             b = str(self.b),
             a = str(self.a)
         )
+    def reset(self)->None:
+        self.n = 0
+        self.itered_through= 0
+        A0 = self.A[0].clone()
+        self.A = torch.empty((self.NumSteps, *A0.shape), dtype = self.A.dtype)
+        self.A[0] = A0.clone()
+        return

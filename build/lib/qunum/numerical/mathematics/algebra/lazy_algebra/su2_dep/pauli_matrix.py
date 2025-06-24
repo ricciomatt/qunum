@@ -21,7 +21,7 @@ class PauliMatrix:
             self, 
             basis:np.ndarray[str] = np.array(['I'], dtype= np.object_), 
             particle_index:np.ndarray[np.int32] = np.array([0], dtype= np.int32),
-            coef:np.ndarray[np.float_]|np.ndarray[np.complex_]|np.ndarray[np.int_] = np.array([1.0], dtype = np.complex128),
+            coef:np.ndarray = np.array([1.0], dtype = np.complex128),
             lazy_ops:bool = False,
             set_direct:pl.DataFrame|pl.LazyFrame|None = None,
             is_zero:bool = False,

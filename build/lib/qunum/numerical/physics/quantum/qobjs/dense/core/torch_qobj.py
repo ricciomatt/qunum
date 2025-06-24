@@ -2,6 +2,7 @@ import torch
 from numpy.typing import NDArray
 from ...meta.meta import QobjMeta
 from typing import Iterable, Self, Any, Callable
+
 import copy
 from torch import Tensor, view_as_real as toR
 from .core import ptrace_torch_ix as ptrace_ix, pT_arr, ventropy, cummatprod_, matprodcontract_
@@ -132,10 +133,10 @@ class TQobj(Tensor):
             raise TypeError('Must Be operator type with multiple entries rank(3)')
         return TQobj(matprodcontract_(self.to_tensor(), left_or_right=left_or_right), meta = self._metadata)
     
-    def eig(self,*args, eigenvectors:bool = True, save:bool = False, recompute:bool = True, check_hermitian:bool = False, ret_tensor:bool= False, **kwargs)->tuple[Tensor, Self]|Tensor:
+    def eig(self,*args, eigenvectors:bool = True, save:bool = False, recompute:bool = True, check_hermitian:bool = False, hermitian:bool = False, ret_tensor:bool= False, **kwargs)->tuple[Tensor, Self]|Tensor:
         def getEig()->tuple[TQobj, Tensor]|tuple[Tensor, Tensor]|Tensor:
             if((self._metadata.eigenVals is None or (self._metadata.eigenBasis is None and eigenvectors)) or recompute):
-                match (int(eigenvectors), int(self._metadata.is_hermitian)):
+                match (int(eigenvectors), int(self._metadata.is_hermitian or hermitian)):
                     case (1,1):
                         v, U = torch.linalg.eigh(self.to_tensor(), *args, **kwargs)
                     case (1,0):
@@ -324,8 +325,8 @@ class TQobj(Tensor):
     def __array__(self)->np.ndarray:
         return self.detach().numpy()
     
-    def __getitem__(self, index)->Self:
-        item:Self = super(TQobj, self).__getitem__(index)
+    def __getitem__(self, *index:tuple[int|slice|range|list|Tensor|NDArray, ...])->Self:
+        item:Self = super(TQobj, self).__getitem__(*index)
         try:
             item._metadata = self._metadata
         except:
@@ -425,7 +426,8 @@ class TQobj(Tensor):
             combs.extend(combinations(ix,i))
         return np.array(combs)
         
-    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, reorder:bool = False)->torch.Tensor|Self:
+    def Tr(self, tr_out:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, keep:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable|None=None, reorder:bool = False, **kwargs)->torch.Tensor|Self:
+        from ......mathematics.combintorix import EnumerateArgCombos
         if(self._metadata.obj_tp != 'operator'):
             raise TypeError('Must be an operator')
         if(tr_out is None and keep is None):
@@ -433,26 +435,26 @@ class TQobj(Tensor):
         else:
             if(tr_out is not None):
                 tr_out = self._metadata.check_particle_ixs(tr_out)
-                ix = np.arange(self._metadata.n_particles)
-                ix = np.delete(ix, tr_out)
+                ix:NDArray = np.arange(self._metadata.n_particles)
+                ix:NDArray = np.delete(ix, tr_out)
+                
             else:
-                ix = self._metadata.check_particle_ixs(keep)
+                ix:NDArray = self._metadata.check_particle_ixs(keep)
             if(ix.shape[0] == self._metadata.n_particles):
                 return self
-            ix_ =  torch.tensor(self._metadata.query_particle_ixs(ix))[:,0]
+            
+            ix_ =  torch.from_numpy(self._metadata.query_particle_ixs(ix)).T
+            lix = ix_.shape[0]
+            ix_ = EnumerateArgCombos(ix_, ix_).__tensor__()
             meta = copy.copy(self._metadata)
             meta.update_dims(ix, reorder=reorder)
-        if(self.requires_grad):
-            if(len(self.shape) > 2):
-                pA = TQobj(torch.zeros((self.shape[0], ix_.shape[0], ix_.shape[0]), dtype=self.dtype), meta = meta)
-            else:
-                pA = TQobj(torch.zeros((ix_.shape[0], ix_.shape[0]), dtype=self.dtype), meta = meta)
-            return ptrace_bwd_ix(ix_, self, pA)
-        else:
-            A = TQobj(ptrace_ix(ix_, self.clone().detach()), meta = meta) 
-            A._metadata.shp = A.shape
-            return  A
-    
+            if('debug' in kwargs):
+                print(ix_, lix,ix)
+                print(self[..., ix_[:,0], ix_[:,1]])
+            
+            return self[...,ix_[:,0], ix_[:,1]].sum(dim=-1).reshape((*self.shape[:-2],lix,lix)).set_meta(meta,inplace=False)
+            
+        
     def pT(self, ix_:list[int]|tuple[int]|NDArray|Tensor|slice|int|Iterable[int])->Self:
         assert len(self.shape)<3, ValueError('Not implemented for shapes larger than 2')
         if(self._metadata.obj_tp != 'operator'):

@@ -74,7 +74,7 @@ class QobjMeta:
         self.dims = dims 
         if(self.obj_tp != 'scaler'):
             A = enumIt(*(range(0,dims[x]) for x in dims), ignore_arange=True)
-            self.ixs = pl.LazyFrame(A.__tensor__(rawIdx=True).numpy()).with_row_index()
+            self.ixs = pl.LazyFrame(A.__tensor__(rawIdx=True).numpy()).with_row_index().with_columns(pl.col('index').cast(pl.Int32))
         else:
             self.ixs = None
         self.n_particles = len(dims)
@@ -83,13 +83,13 @@ class QobjMeta:
     def update_dims(self, keep_ixs:Iterable, reorder:bool = False)->None:
         self.ixs = self.ixs.select(vgc(keep_ixs))
         if(reorder):
-            self.dims = {i:self.dims[k] for i, k in enumerate(keep_ixs)}
+            self.dims = {int(i):self.dims[k] for i, k in enumerate(keep_ixs)}
             self.ixs = self.ixs.rename({f"column_{k}":f"column_{i}" for i, k in enumerate(keep_ixs)}).with_row_index()
         else:
-            self.dims = {k:self.dims[k] for k in keep_ixs}
+            self.dims = {int(k):self.dims[k] for k in keep_ixs}
             self.ixs = self.ixs.with_row_index()
         self.n_particles = int(len(self.dims))
-        self.hilbert_space_dims = np.prod(self.dims.values())
+        self.hilbert_space_dims = int(np.prod(list(self.dims.values())))
         return 
     
     def _reset_(self):
@@ -122,7 +122,7 @@ class QobjMeta:
     def particle_in(self, ixs:Iterable)->None:
         return all(map(lambda x: x in self.dims , ixs))
     
-    def check_particle_ixs(self, ix:Iterable|int)->Iterable[int]:
+    def check_particle_ixs(self, ix:Iterable|int)->NDArray:
         if(is_iterable(ix)): 
             ix_ = np.array(ix, dtype=np.int32)
         elif(isinstance(ix, int)): 
@@ -130,9 +130,9 @@ class QobjMeta:
         else: 
             raise TypeError('tr_out must be Iterable[int] or int')
         assert self.particle_in(ix_), ValueError('Particle Not found')
-        return ix_
+        return np.array(ix_)
     
-    def query_particle_ixs(self, ix:NDArray):
+    def query_particle_ixs(self, ix:NDArray)->NDArray:
         a:np.ndarray = vgc(ix)
         return self.ixs.group_by(
                 pl.col(
@@ -140,7 +140,24 @@ class QobjMeta:
                     )
                 ).agg(
                     pl.col('index').implode().alias('ix')
-                ).collect().sort(a)['ix'].to_list()
+                ).with_columns(
+                    pl.col('ix').cast(
+                        pl.Array(pl.Int32,
+                                 (
+                                     int(
+                                         np.prod(
+                                            list(
+                                                (
+                                                    self.dims[i] 
+                                                    for i in (self.dims) 
+                                                    if i not in ix)
+                                            )
+                                        )
+                                    )
+                                ,)
+                            )
+                        )
+                ).collect().sort(a)['ix'].to_numpy()
     
 
 

@@ -9,5 +9,7 @@ sympy
 pandas
 qutip
 matplotlib
-scikit-learn==1.2.2
+scikit-learn
 imblearn
+numba
+tqdm

@@ -1,3 +1,4 @@
-from . import grid_space
-from . import integrators_dep as deprecated_integrators
+from .linspace import grid_space
 from .integrators import NewtonCoates
+from .linspace import AdaptiveLinspace
+from.differntiators import Diff

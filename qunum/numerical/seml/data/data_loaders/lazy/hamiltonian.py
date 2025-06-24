@@ -9,6 +9,7 @@ class LazyTimeHamiltonian:
                  hamiltonain:Callable = None,
                  dt:float = 1e-3,
                  num_steps:int = 10,
+                 to_tqobj:bool = True
                 )->None:
         self.dt = dt
         self.n = 0

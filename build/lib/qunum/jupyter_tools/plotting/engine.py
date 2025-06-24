@@ -11,6 +11,7 @@ import numpy as np
 class PlotIt:
     def __init__(self, data:list[dict]|None = None, frames:list[list[dict]]|None = None, offline:bool = False, connected:bool = False)->None:
         self.offline = offline
+        self.connected = connected
         if(offline):
             init_notebook_mode(connected=connected)
         a = plotly_configs()
@@ -241,9 +242,7 @@ class PlotIt:
         return ''
     
     def reset(self)->None:
-        self.data:list[dict] = []
-        self.frames:list[list[dict]] = [[]]
-        self.curve_names = set({})
+        self.__init__(offline = self.offline, connected = self.connected)
         return
 
 def plotly_configs()->dict[str:dict, str:dict, str:dict]:

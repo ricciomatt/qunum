@@ -1,6 +1,6 @@
 import torch
 from ...qobjs import TQobj
-from .....mathematics.algebra.sun.structure import SUAlgebra, su_n_generate
+from .....mathematics.algebra.sun.structure import SUConnection as SUAlgebra, su_n_generate
 from .....mathematics.stochastic.bound import BoundStochasticWalker
 from typing import Self
 from ...operators.dense.nuetrino import pmns2, pmns3
@@ -35,7 +35,7 @@ class sunIsing:
                 psi0 = pmns3() @ psi0
                 rho = psi0 @ psi0.dag()
                 self.B[2] = dm2/4
-                self.B[3] = Dm2/4
+                self.B[8] = Dm2/4
             case (None,2):
                 psi0 = TQobj(torch.zeros((self.sun.n,1),dtype = torch.complex128))
                 psi0[0] = 1                
@@ -261,12 +261,9 @@ class sunIsing:
         if(self.n == self.itered_through *self.NumSteps -1 and self.n != 0):
             self.T = torch.concat((self.T, torch.empty((self.NumSteps, *self.T.shape[1:]))))
         if(self.NumSteps*(self.itered_through+1)-1>self.n):
-            #self.T[self.n+1] = self.T[self.n] + self.meanFieldDynamics()
-            self.monteCarlo()
+            self.T[self.n+1] = self.T[self.n] + self.meanFieldDynamics()
+            #self.monteCarlo()
             self.n+=1
-            if((self.n%10) == 0):
-                print(self.n)
-                raise StopIteration
             return self.T[self.n]
         else:
             self.itered_through += 1
